@@ -1,4 +1,4 @@
-#############################################################################
+############################################################################
 # NB_Classifier.py
 #
 # Implements the Naive Bayes classifier for simple probabilistic inference.
@@ -25,6 +25,11 @@ class NB_Classifier:
     log_probabilities = False
 
     def __init__(self, file_name, fitted_model=None):
+        if file_name is None:
+            return
+        else:
+            self.read_data(file_name)
+
         self.read_data(file_name)
         if fitted_model is None:
             self.estimate_probabilities()
