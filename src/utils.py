@@ -208,8 +208,10 @@ def getBasicStructure(filePath):
     return structure
 
 
-def calculateMarginalProbabilities(trainDataPath):
-    data = readCsv(trainDataPath, True)
+def readTrainingData(trainingDataPath):
+    if trainingDataPath is None:
+        return "training data path or data values must be provided"
+    data = readCsv(trainingDataPath, True)
     type, random_variables, result, input_data, output_data = (
         data["type"],
         data["headers"]["random_variables"],
@@ -217,6 +219,18 @@ def calculateMarginalProbabilities(trainDataPath):
         data["variables"]["input_variables"],
         data["variables"]["output"],
     )
+    return type, random_variables, result, input_data, output_data
+
+
+def calculateMarginalProbabilities(*trainingDataPath, data=None):
+    if data is not None:
+        type, random_variables, result, input_data, output_data = data
+    elif trainingDataPath is not None:
+        type, random_variables, result, input_data, output_data = readTrainingData(
+            trainingDataPath
+        )
+    else:
+        return "training data path or data values must be provided"
 
     if type != "training":
         return "this should be training data type"
@@ -242,18 +256,38 @@ def calculateMarginalProbabilities(trainDataPath):
 
     return marginal_probability
 
-def calculateConditionalProbability(trainingData, prior, evidence):
+
+def allConditionalProbabilities(data):
+    if data is not None:
+        type, random_variables, result, input_data, output_data = data
+    else:
+        return "training data values must be provided"
+
+    conditional_probabilities = {}
+    for var in random_variables:
+        conditional_probabilities[var + "|" + result] = calculateConditionalProbability(
+            data, var, result
+        )
+
+    return conditional_probabilities
+
+
+def calculateConditionalProbability(data, prior, evidence):
     """
     Method to calculate the conditional probabilies of the given dataset
     """
-    data = readCsv(trainingData, True)
-    type, random_variables, result, input_data, output_data = (
-        data["type"],
-        data["headers"]["random_variables"],
-        data["headers"]["result"],
-        data["variables"]["input_variables"],
-        data["variables"]["output"],
-    )
+    # validation
+    if data is not None:
+        type, random_variables, result, input_data, output_data = data
+    # elif trainingDataPath is not None:
+    #     type, random_variables, result, input_data, output_data = readTrainingData(
+    #         trainingDataPath
+    #     )
+    else:
+        return "training data path or data values must be provided"
+
+    if type != "training":
+        return "this should be training data type"
 
     variables = np.append(random_variables, result)
     variable_data = np.append(input_data, np.vstack(output_data), axis=1)
@@ -278,15 +312,17 @@ def calculateConditionalProbability(trainingData, prior, evidence):
         conditional_probabilities[curr_prior][curr_evidence] += (
             1 / evidence_data[curr_evidence]
         )
-    print(f"P({prior}|{evidence}) = {conditional_probabilities}")
 
     return conditional_probabilities
 
 
-# @param random_variables is all the variables in the dataset
-# @param variables_data is all the data in the dataset
-# @param variable is the specifific variable we want to get the index and count of
 def getUniqueValues(random_variables, variables_data, variable):
+    """
+    @param random_variables is all the variables in the dataset
+    @param variables_data is all the data in the dataset
+    @param variable is the specifific variable we want to get the index and
+           count of
+    """
     [[idx_rand_vars]] = np.where(random_variables == variable)
     [variables, counts] = np.unique(
         variables_data[:, idx_rand_vars], return_counts=True
@@ -295,3 +331,42 @@ def getUniqueValues(random_variables, variables_data, variable):
     for idx, variable in enumerate(variables):
         unique_values[variable] = counts[idx]
     return idx_rand_vars, unique_values
+
+
+def independantProbabilityStructure(data):
+    """
+    evaluting all combinations of random vaiables
+    """
+    # reading data
+    type, random_variables, result, input_data, output_data = data
+
+    # step1 get all marginal_probabilities
+    marProb = calculateMarginalProbabilities(data=data)
+
+    # step 2: get all possible conditional probabilities assuming all are independant
+    condProb = allConditionalProbabilities(data)
+    structure = {**marProb, **condProb}
+    return structure
+
+
+def formatIntoConfigStructureFile(evalVar, filePath):
+    data = readTrainingData(filePath)
+    type, random_variables, result, input_data, output_data = data
+    variables = np.append(random_variables, result)
+
+    if evalVar not in variables:
+        return f"{evalVar} was not found in the list of random_variables\
+        \nPlease selct from {variables}"
+
+    structureData = independantProbabilityStructure(data)
+
+    with open("config/config-" + evalVar.lower() + "-created.txt", "w") as file:
+        file.write(f"name: {evalVar}")
+
+        file.write("\n\nrandom_variables:")
+        for var in np.append(random_variables, result):
+            file.write(f"{var};")
+
+        file.write("\n\nstructure:")
+        for struct in structureData:
+            file.write(f"P({struct});")
