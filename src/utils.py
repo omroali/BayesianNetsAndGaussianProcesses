@@ -242,9 +242,10 @@ def calculateMarginalProbabilities(trainDataPath):
 
     return marginal_probability
 
-
 def calculateConditionalProbability(trainingData, prior, evidence):
-    # P(O|PT) = P(O)*P(PT)/P(PT)
+    """
+    Method to calculate the conditional probabilies of the given dataset
+    """
     data = readCsv(trainingData, True)
     type, random_variables, result, input_data, output_data = (
         data["type"],
@@ -257,38 +258,40 @@ def calculateConditionalProbability(trainingData, prior, evidence):
     variables = np.append(random_variables, result)
     variable_data = np.append(input_data, np.vstack(output_data), axis=1)
 
-    # prior = 'O = sunny', evidence = 'PT = yes'
-    # get index of prior
-
-    # TODO: think about how to process nested situations, ie if
-    # if prior is ('PT ^ O')
-    # or evidence is ('W ^ T')
-
     # find unique values in data column with index idx
-    idx_prior, prior_outputs, prior_counts = getUniqueValues(
-        variables, variable_data, prior
-    )
+    idx_prior, prior_data = getUniqueValues(variables, variable_data, prior)
 
-    idx_evidence, evidence_outputs, evidence_counts = getUniqueValues(
-        variables, variable_data, prior
-    )
+    idx_evidence, evidence_data = getUniqueValues(variables, variable_data, evidence)
 
-    # for variable_data in variable_data[idx_prior]
+    conditional_probabilities = {}
 
-    # conditional_probabilities = {}
-    # result_header = data["headers"]["result"]
-    # for random_variable in data["headers"]["random_variables"]:
-    #     conditional_probabilities[random_variable] = (
-    #         P[random_variable] * P[result_header]
-    #     ) / P[result_header]
+    # initialising all the possible random variables with given outcomes
+    for condition in prior_data:
+        conditional_probabilities[condition] = {}
+        for possible_outputs in evidence_data.keys():
+            conditional_probabilities[condition][possible_outputs] = 0
 
-    # return conditional_probabilities
+    # looping through all rows and adding a count to determine the conditional probabilities
+    for row in variable_data:
+        curr_prior = row[idx_prior]
+        curr_evidence = row[idx_evidence]
+        conditional_probabilities[curr_prior][curr_evidence] += (
+            1 / evidence_data[curr_evidence]
+        )
+    print(f"P({prior}|{evidence}) = {conditional_probabilities}")
+
+    return conditional_probabilities
 
 
 # @param random_variables is all the variables in the dataset
 # @param variables_data is all the data in the dataset
 # @param variable is the specifific variable we want to get the index and count of
 def getUniqueValues(random_variables, variables_data, variable):
-    [[idx]] = np.where(random_variables == variable)
-    outputs, counts = np.unique(variables_data[:, idx], return_counts=True)
-    return idx, outputs, counts
+    [[idx_rand_vars]] = np.where(random_variables == variable)
+    [variables, counts] = np.unique(
+        variables_data[:, idx_rand_vars], return_counts=True
+    )
+    unique_values = {}
+    for idx, variable in enumerate(variables):
+        unique_values[variable] = counts[idx]
+    return idx_rand_vars, unique_values
