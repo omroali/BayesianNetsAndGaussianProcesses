@@ -1,3 +1,4 @@
+from re import A
 import numpy as np
 import csv
 
@@ -331,11 +332,12 @@ def independantProbabilityStructure(data):
     # reading data
     type, random_variables, result, input_data, output_data = data
 
-    # step1 get all marginal_probabilities
-    marProb = calculateMarginalProbabilities(data=data)
+    # step1 get all    
+    marProb = calculateMarginalProbabilities(data)
 
     # step 2: get all possible conditional probabilities assuming all are independant
     condProb = allConditionalProbabilities(data)
+    structure = marProb.copy()
     structure = {**marProb, **condProb}
     return structure
 
@@ -355,9 +357,15 @@ def formatIntoConfigStructureFile(evalVar, filePath):
         file.write(f"name:{evalVar}({evalVar})")
 
         file.write("\n\nrandom_variables:")
+        vars = []
         for var in np.append(random_variables, result):
-            file.write(f"{var}({var});")
-
+            vars.append(var) 
+               
+        file.write(';'.join(vars))
+        # how to split array into string with ; sperator
+        # file.write(random_variables.join(";"))
         file.write("\n\nstructure:")
+        structs = []
         for struct in structureData:
-            file.write(f"P({struct});")
+            structs.append(struct)
+        file.write(';'.join(structs))
