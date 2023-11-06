@@ -4,21 +4,30 @@ import csv
 # import pandas as pd
 
 
-def readCsv(filePath, training=False):
+def readCsv(filePath, *training: str):
+    '''
+    @param filePath is the path to the csv file
+    @param training is the random variable to be evaluated
+    @return a dictionary of the data
+    '''
     read_data = np.genfromtxt(filePath, delimiter=",", dtype="<U11")
-    header_data = read_data[0]
     # read_data = pd.read_csv(filePath)
     # header_data = list(read_data.columns)
     response_data = {}
     headers = {}
-
+    
+    
     if training:
-        headers["random_variables"] = header_data[:-1]
-        headers["result"] = header_data[-1]
-        # reponse_data['data'] = read_data.iloc[:, :-1]
-        # reponse_data['result'] = read_data.iloc[:, -:-1]
-        response_data["input_variables"] = read_data[1:, :-1]
-        response_data["output"] = read_data[1:, -1]  # i.e. the last column
+        header_data = read_data[0]
+        if training not in header_data:
+            return "Must be a random variable in the dataset"
+        [[idx_result]] = np.where(header_data == training)
+
+        # // find index of training
+        headers["result"] = header_data[idx_result]
+        headers["random_variables"] = np.delete(header_data, idx_result)
+        response_data["output"] = read_data[1:, idx_result]  # i.e. the last column
+        response_data["input_variables"] = np.delete(read_data, idx_result, axis=1)[1:]
         print(f'Training data formatted to evaluate {headers["result"]}')
     else:
         headers["random_variables"] = header_data
@@ -31,8 +40,7 @@ def readCsv(filePath, training=False):
         "variables": response_data,
     }
 
-
-### Consider using dataclass instead for this?
+### Consider using dataclass instead for this?
 class BayesianNetworkStructure:
     def __init__(self, name, structure, rand_vars, cpt_vals=None):
         # Validation
@@ -61,15 +69,6 @@ class BayesianNetworkStructure:
 
     def setRandomVariableStructure(self):
         return 0
-
-
-"""
-assumed structure
-name: ...
-random_variables = ...
-structure = ...
-CPTs = ...
-"""
 
 
 def readBayesianNetworkStructure(filePath):
@@ -208,10 +207,10 @@ def getBasicStructure(filePath):
     return structure
 
 
-def readTrainingData(trainingDataPath):
+def readTrainingData(trainingDataPath, training: str):
     if trainingDataPath is None:
         return "training data path or data values must be provided"
-    data = readCsv(trainingDataPath, True)
+    data = readCsv(trainingDataPath, training)
     type, random_variables, result, input_data, output_data = (
         data["type"],
         data["headers"]["random_variables"],
@@ -222,15 +221,11 @@ def readTrainingData(trainingDataPath):
     return type, random_variables, result, input_data, output_data
 
 
-def calculateMarginalProbabilities(*trainingDataPath, data=None):
+def calculateMarginalProbabilities(data):
     if data is not None:
         type, random_variables, result, input_data, output_data = data
-    elif trainingDataPath is not None:
-        type, random_variables, result, input_data, output_data = readTrainingData(
-            trainingDataPath
-        )
     else:
-        return "training data path or data values must be provided"
+        return "training data values must be provided"
 
     if type != "training":
         return "this should be training data type"
@@ -279,10 +274,6 @@ def calculateConditionalProbability(data, prior, evidence):
     # validation
     if data is not None:
         type, random_variables, result, input_data, output_data = data
-    # elif trainingDataPath is not None:
-    #     type, random_variables, result, input_data, output_data = readTrainingData(
-    #         trainingDataPath
-    #     )
     else:
         return "training data path or data values must be provided"
 
@@ -350,7 +341,7 @@ def independantProbabilityStructure(data):
 
 
 def formatIntoConfigStructureFile(evalVar, filePath):
-    data = readTrainingData(filePath)
+    data = readTrainingData(filePath, evalVar)
     type, random_variables, result, input_data, output_data = data
     variables = np.append(random_variables, result)
 
@@ -361,11 +352,11 @@ def formatIntoConfigStructureFile(evalVar, filePath):
     structureData = independantProbabilityStructure(data)
 
     with open("config/config-" + evalVar.lower() + "-created.txt", "w") as file:
-        file.write(f"name: {evalVar}")
+        file.write(f"name:{evalVar}({evalVar})")
 
         file.write("\n\nrandom_variables:")
         for var in np.append(random_variables, result):
-            file.write(f"{var};")
+            file.write(f"{var}({var});")
 
         file.write("\n\nstructure:")
         for struct in structureData:
