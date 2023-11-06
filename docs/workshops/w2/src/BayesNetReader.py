@@ -49,21 +49,22 @@ class BayesNetReader:
 
         self.bn[key] = value
         self.bn["random_variables_raw"] = self.bn["random_variables"]
-        print("RAW key-values="+str(self.bn))
+        print("RAW key-values=" + str(self.bn))
 
     def tokenise_data(self):
         print("TOKENISING data...")
+        print(self.bn.items())
         rv_key_values = {}
 
         for key, values in self.bn.items():
-
             if key == "random_variables":
                 var_set = []
-                for value in values.split(";"):
+                for value in list(filter(None, values.split(";"))):
                     if value.find("(") and value.find(")"):
-                        value = value.replace('(', ' ')
-                        value = value.replace(')', ' ')
-                        parts = value.split(' ')
+                        value = value.replace("(", " ")
+                        value = value.replace(")", " ")
+                        parts = value.split(" ")
+                        print(parts[1])
                         var_set.append(parts[1].strip())
                     else:
                         var_set.append(value)
@@ -93,8 +94,8 @@ class BayesNetReader:
                 if len(values) > 1:
                     self.bn[key] = values
 
-        self.bn['rv_key_values'] = rv_key_values
-        print("TOKENISED key-values="+str(self.bn))
+        self.bn["rv_key_values"] = rv_key_values
+        print("TOKENISED key-values=" + str(self.bn))
 
 
 if __name__ == "__main__":
@@ -103,3 +104,4 @@ if __name__ == "__main__":
     else:
         file_name = sys.argv[1]
         BayesNetReader(file_name)
+
