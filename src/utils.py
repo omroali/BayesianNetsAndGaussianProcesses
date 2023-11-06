@@ -334,15 +334,18 @@ def independantProbabilityStructure(data):
 
     # step1 get all    
     marProb = calculateMarginalProbabilities(data)
+    print(marProb[result])
+    
 
     # step 2: get all possible conditional probabilities assuming all are independant
     condProb = allConditionalProbabilities(data)
-    structure = marProb.copy()
-    structure = {**marProb, **condProb}
+
+    structure = condProb.copy()
+    structure[result] = marProb[result]
     return structure
 
 
-def formatIntoConfigStructureFile(evalVar, filePath):
+def formatIntoConfigStructureFile(evalVar, filePath, structureType="independant"):
     data = readTrainingData(filePath, evalVar)
     type, random_variables, result, input_data, output_data = data
     variables = np.append(random_variables, result)
@@ -351,15 +354,22 @@ def formatIntoConfigStructureFile(evalVar, filePath):
         return f"{evalVar} was not found in the list of random_variables\
         \nPlease selct from {variables}"
 
-    structureData = independantProbabilityStructure(data)
-
-    with open("config/config-" + evalVar.lower() + "-created.txt", "w") as file:
+    # section to check the type of structure that will be used for the cpt
+    if not structureType:
+        return "structureType must be provided"
+        
+    if structureType == "independant":
+        structureData = independantProbabilityStructure(data)
+        
+    
+    newFilePath = "config/config-" + evalVar.lower() + "-created.txt"
+    with open(newFilePath, "w") as file:
         file.write(f"name:{evalVar}({evalVar})")
 
         file.write("\n\nrandom_variables:")
         vars = []
         for var in np.append(random_variables, result):
-            vars.append(var) 
+            vars.append(f'P({var})') 
                
         file.write(';'.join(vars))
         # how to split array into string with ; sperator
@@ -367,5 +377,7 @@ def formatIntoConfigStructureFile(evalVar, filePath):
         file.write("\n\nstructure:")
         structs = []
         for struct in structureData:
-            structs.append(struct)
+            structs.append(f'P({struct})')
         file.write(';'.join(structs))
+    
+    return newFilePath
