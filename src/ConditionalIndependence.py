@@ -15,10 +15,12 @@
 #
 # Version: 1.0, Date: 19 October 2022 (first version)
 # Version: 1.1, Date: 07 October 2023 (minor revision)
+# Version: 1.2, Date: 03 November 2023 (support for continuous data)
 # Contact: hcuayahuitl@lincoln.ac.uk
 #############################################################################
 
-import sys
+import sys  
+import numpy as np
 from causallearn.utils.cit import CIT
 
 
@@ -26,16 +28,23 @@ class ConditionalIndependence:
     chisq_obj = None
     rand_vars = []
     rv_all_values = []
-    chi_square_test = True
+    use_continuous_data = False
+    continuous_data_tests = ['fisherz']
+    discrete_data_tests = ['chisq', 'gsq']
+    all_tests = continuous_data_tests + discrete_data_tests
 
-    def __init__(self, file_name):
+    def __init__(self, file_name, test='chisq'):
         data = self.read_data(file_name)
-        test = "chisq" if self.chi_square_test else "gsq"
+        if test not in self.all_tests:
+            print("ERROR: Unknown test type %s" % (test))
+            exit(0)
+        self.use_continuous_data = True if test in self.continuous_data_tests else False
+        print(f'Using test: {test}')
         self.chisq_obj = CIT(data, test)
 
     def read_data(self, data_file):
-        print("\nREADING data file %s..." % (data_file))
-        print("---------------------------------------")
+        # print("\nREADING data file %s..." % (data_file))
+        # print("---------------------------------------")
 
         with open(data_file) as csv_file:
             for line in csv_file:
@@ -44,11 +53,13 @@ class ConditionalIndependence:
                     self.rand_vars = line.split(',')
                 else:
                     values = line.split(',')
+                    values = list(map(float, values)) if self.use_continuous_data else values
                     self.rv_all_values.append(values)
 
-        print("RANDOM VARIABLES=%s" % (self.rand_vars))
-        print("VARIABLE VALUES (first 10)=%s" % (self.rv_all_values[:10])+"\n")
-        return self.rv_all_values
+        # print("RANDOM VARIABLES=%s" % (self.rand_vars))
+        # print("VARIABLE VALUES (first 10)=%s" % (self.rv_all_values[:10])+"\n")
+        returnVals = np.array(self.rv_all_values) if self.use_continuous_data else self.rv_all_values
+        return returnVals
 
     def parse_test_args(self, test_args):
         main_args = test_args[2:len(test_args)-1]
@@ -84,6 +95,9 @@ class ConditionalIndependence:
         var_i = self.get_var_index(variable_i)
         var_j = self.get_var_index(variable_j)
         par_i = self.get_var_indexes(parents_i)
+        if self.chisq_obj is None:
+            print("ERROR: chisq_obj is None")
+            exit(0)
         p = self.chisq_obj(var_i, var_j, par_i)
 
         print("X2test: Vi=%s, Vj=%s, pa_i=%s, p=%s" %
