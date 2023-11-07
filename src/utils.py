@@ -2,6 +2,9 @@ from re import A
 import numpy as np
 import csv
 
+from BayesNetInference import BayesNetInference
+from ConditionalIndependence import ConditionalIndependence
+
 # import pandas as pd
 
 
@@ -346,6 +349,7 @@ def independantProbabilityStructure(data):
 
 
 def formatIntoConfigStructureFile(evalVar, filePath, structureType="independant"):
+    acceptable_struct_types = ['independant']
     data = readTrainingData(filePath, evalVar)
     type, random_variables, result, input_data, output_data = data
     variables = np.append(random_variables, result)
@@ -355,7 +359,7 @@ def formatIntoConfigStructureFile(evalVar, filePath, structureType="independant"
         \nPlease selct from {variables}"
 
     # section to check the type of structure that will be used for the cpt
-    if not structureType:
+    if structureType not in acceptable_struct_types:
         return "structureType must be provided"
         
     if structureType == "independant":
