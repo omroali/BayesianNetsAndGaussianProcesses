@@ -216,13 +216,13 @@ class CPT_Generator(BayesNetReader, NB_Classifier):
                     cfg_file.write('\n')
                 cfg_file.write('\n')
 
+if __name__=="__main__":
+    if len(sys.argv) != 3:
+        print("USAGE: CPT_Generator.py [your_config_file.txt] [training_file.csv]")
+        print("EXAMPLE> CPT_Generator.py config-playtennis.txt play_tennis-train.csv")
+        exit(0)
 
-# if len(sys.argv) != 3:
-#     print("USAGE: CPT_Generator.py [your_config_file.txt] [training_file.csv]")
-#     print("EXAMPLE> CPT_Generator.py config-playtennis.txt play_tennis-train.csv")
-#     exit(0)
-
-# else:
-#     configfile_name = sys.argv[1]
-#     datafile_name = sys.argv[2]
-#     CPT_Generator(configfile_name, datafile_name)
+    else:
+        configfile_name = sys.argv[1]
+        datafile_name = sys.argv[2]
+        CPT_Generator(configfile_name, datafile_name)

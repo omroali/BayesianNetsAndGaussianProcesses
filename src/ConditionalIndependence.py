@@ -90,16 +90,16 @@ class ConditionalIndependence:
               (variable_i, variable_j, parents_i, p))
         return p
 
+if __name__=="__main":
+    if len(sys.argv) != 3:
+        print("USAGE: ConditionalIndepencence.py [train_file.csv] [I(Vi,Vj|parents)]")
+        print("EXAMPLE1: python ConditionalIndependence.py lang_detect_train.csv \"I(X1,X2|Y)\“")
+        print("EXAMPLE2: python ConditionalIndependence.py lang_detect_train.csv \"I(X1,X15|Y)\“")
+        exit(0)
+    else:
+        data_file = sys.argv[1]
+        test_args = sys.argv[2]
 
-if len(sys.argv) != 3:
-    print("USAGE: ConditionalIndepencence.py [train_file.csv] [I(Vi,Vj|parents)]")
-    print("EXAMPLE1: python ConditionalIndependence.py lang_detect_train.csv \"I(X1,X2|Y)\“")
-    print("EXAMPLE2: python ConditionalIndependence.py lang_detect_train.csv \"I(X1,X15|Y)\“")
-    exit(0)
-else:
-    data_file = sys.argv[1]
-    test_args = sys.argv[2]
-
-    ci = ConditionalIndependence(data_file)
-    Vi, Vj, parents_i = ci.parse_test_args(test_args)
-    ci.compute_pvalue(Vi, Vj, parents_i)
+        ci = ConditionalIndependence(data_file)
+        Vi, Vj, parents_i = ci.parse_test_args(test_args)
+        ci.compute_pvalue(Vi, Vj, parents_i)
