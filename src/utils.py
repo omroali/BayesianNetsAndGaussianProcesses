@@ -385,3 +385,22 @@ def formatIntoConfigStructureFile(evalVar, filePath, structureType="independant"
         file.write(';'.join(structs))
     
     return newFilePath
+
+#########################################
+############### Inference  ##############
+#########################################
+def InferenceByEnumeration():
+    alg_name = 'InferenceByEnumeration'
+    # file_name =
+    # prob_query = 
+    # num_samples = 
+    BayesNetInference(alg_name, file_name, prob_query, num_samples)
+    return 0
+
+def RejectionSampling():
+    alg_name = 'RejectionSampling'
+    # file_name =
+    # prob_query = 
+    # num_samples = 
+    BayesNetInference(alg_name, file_name, prob_query, num_samples)
+    return 0
