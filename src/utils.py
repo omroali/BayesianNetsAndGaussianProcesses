@@ -404,3 +404,29 @@ def RejectionSampling():
     # num_samples = 
     BayesNetInference(alg_name, file_name, prob_query, num_samples)
     return 0
+
+#########################################
+########## Independece Testing ##########
+#########################################
+'''
+for more independence tests, check the city.py file as it contains many tests
+/home/krono/.local/lib/python3.10/site-packages/causallearn/utils/cit.py
+'''
+
+########### Discrete Tests ###########
+def ChiIndependenceTest(train_data_path, test_args = 'I(Smoking,Coughing|Lung_cancer)'):
+    ci = ConditionalIndependence(train_data_path, 'chisq')
+    Vi, Vj, parents_i = ci.parse_test_args(test_args)
+    ci.compute_pvalue(Vi, Vj, parents_i)
+    return 0
+    
+def GsqIndependenceTest(train_data_path, test_args = 'I(Smoking,Coughing|Lung_cancer)'):
+    ci = ConditionalIndependence(train_data_path, 'gsq')
+    Vi, Vj, parents_i = ci.parse_test_args(test_args)
+    ci.compute_pvalue(Vi, Vj, parents_i)
+    return 0 
+
+########### Continuous Tests ###########
+def fisherzIndependenceTest(train_data_path, test_args = 'I(Smoking,Coughing|Lung_cancer)'):
+    # TODO:
+    return 0 
