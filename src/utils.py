@@ -1,11 +1,15 @@
-from re import A
 import numpy as np
 import csv
+
+from sympy import im
 
 from BayesNetInference import BayesNetInference
 from ConditionalIndependence import ConditionalIndependence
 
 # import pandas as pd
+from matplotlib import pyplot as plt
+import networkx as nx
+from itertools import combinations
 
 
 def readCsv(filePath, *training: str):
@@ -430,3 +434,54 @@ def GsqIndependenceTest(train_data_path, test_args = 'I(Smoking,Coughing|Lung_ca
 def fisherzIndependenceTest(train_data_path, test_args = 'I(Smoking,Coughing|Lung_cancer)'):
     # TODO:
     return 0 
+
+
+
+
+#########################################
+## PC Algorithm for Structure Learning ##
+#########################################    
+def fullyConnectedGraph(nodes: list[str], G = nx.Graph()):
+    # using the combinations method from itertools to create all possible edges
+    edges = combinations(nodes, 2)
+    
+    # setting up the graphs
+    G.add_nodes_from(nodes)
+    G.add_edges_from(edges)
+    
+    return G
+    
+def removeEdge(G, edge: list[str]):
+    G.remove_edge(edge[0], edge[1])
+    return G
+
+def immortalityTest(parentNodes: list[str], conditioningNode: str, TrueGraph: nx.DiGraph):
+    immoralEdgeCheck = [(parent, conditioningNode) for parent in parentNodes]
+    print(immoralEdgeCheck)
+    TrueGraphEdges = TrueGraph.edges()
+    print(TrueGraphEdges)
+    for edge in immoralEdgeCheck:
+        if edge not in TrueGraphEdges:
+            return False
+    return True
+    
+def independenceOnNoCondition(G: nx.Graph, TrueGraph: nx.DiGraph) -> nx.Graph:
+    
+    edges = list(G.edges())
+    nodes = list(G.nodes())
+    
+    for edge in edges:
+        for node in nodes:
+            if immortalityTest(edge, node, TrueGraph):
+                removeEdge(G, edge)
+    return G
+
+def independenceOnCondition(G: nx.Graph, TrueGraph: nx.DiGraph, conditioningSet: list[str]) -> nx.Graph:
+    # for all other pairs of variables (not the conditioningSet) 
+        # detect the ones that are independent
+    
+    for condition in conditioningSet:    
+        edges = list(G.edges())
+    return G
+
+    
