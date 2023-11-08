@@ -5,17 +5,42 @@
 # It generates a dictionary of key-value pairs containing information
 # describing the random variables, structure, and conditional probabilities.
 # This implementation aims to be agnostic of the data (no hardcoded vars/probs)
-#
+## 
 # Keys expected: name, random_variables, structure, and CPTs.
 # Separators: COLON(:) for key-values, EQUALS(=) for table_entry-probabilities
-# Example configuration file: see config_alarm.txt (from workshop of week 3)
+# The following is a snippet of configuration file config_alarm.txt
+# --------------------------------------------------------
+# name:Alarm
+# 
+# random_variables:Burglary(B);Earthquake(E);Alarm(A);JohnCalls(J);MaryCalls(M)
+# 
+# structure:P(B);P(E);P(A|B,E);P(J|A);P(M|A)
+# 
+# CPT(B):
+# true=0.001;false=0.999
+
+# CPT(E):
+# true=0.002;false=0.998
+# 
+#  ...
+# 
+# CPT(M|A):
+# true|true=0.70;
+# true|false=0.01;
+# false|true=0.30;
+# false|false=0.99
+# --------------------------------------------------------
+# The file above replaces CPTs by regression_models in the case of Bayes nets
+# with continuous data, where instead of CPTs regression models are used.
 #
 # Version: 1.0
-# Date: 06 October 2022
+# Date: 06 October 2022 first version
+# Date: 25 October 2023 extended for Bayes nets with KernelRidge regression
 # Contact: hcuayahuitl@lincoln.ac.uk
 #############################################################################
 
 import sys
+import pickle
 
 
 class BayesNetReader:
@@ -24,7 +49,10 @@ class BayesNetReader:
     def __init__(self, file_name):
         self.read_data(file_name)
         self.tokenise_data()
+        self.load_regression_models()
 
+    # starts loading a configuration file into dictionary 'bn', by
+    # splitting strings with character ':' and storing keys and values 
     def read_data(self, data_file):
         print("\nREADING data file %s..." % (data_file))
 
@@ -51,6 +79,11 @@ class BayesNetReader:
         self.bn["random_variables_raw"] = self.bn["random_variables"]
         print("RAW key-values="+str(self.bn))
 
+    # continues loading a configuration file into dictionary 'bn', by
+    # separating key-value pairs as follows:
+    # (a) random_variables are stored as list in self.bn['random_variables']
+    # (b) CPTs are stored as an inner dictionary in self.bn['CPT']
+	# (c) all others are stored as key-value pairs in self.bn[key]
     def tokenise_data(self):
         print("TOKENISING data...")
         rv_key_values = {}
@@ -95,6 +128,37 @@ class BayesNetReader:
 
         self.bn['rv_key_values'] = rv_key_values
         print("TOKENISED key-values="+str(self.bn))
+
+    # puts the following key-value pairs in 'bn' as follows:
+    # means of each random variable in regression_models['means']
+    # standard deviations of random variables in regression_models['stdevs']
+    # regression models of random variables in regression_models['coefficients']
+    def load_regression_models(self):
+        # check whether the regression_models exist (defined in the config file)
+        is_regression_models_available = False
+        for key, value in self.bn.items():
+            if key == "regression_models":
+                is_regression_models_available = True
+				
+        # loads the regression_models as per the .pkl file in the config file
+        if  is_regression_models_available:
+            try:
+                configfile_name = self.bn["regression_models"]
+                print("\nLOADING %s ..." % (configfile_name))
+                models_file = open(configfile_name, 'rb')
+                regression_models = pickle.load(models_file)
+                self.bn["means"] = regression_models["means"]
+                self.bn["stdevs"] = regression_models["stdevs"]
+                self.bn["regressors"] = regression_models["regressors"]
+                self.bn["coefficients"] = regression_models["coefficients"]
+                self.bn["intercepts"] = regression_models["intercepts"]
+				
+                models_file.close()
+                print("Regression models loaded!")
+
+            except Exception:
+                print("Couldn't find file %s" % (configfile_name))
+                pass
 
 
 if __name__ == "__main__":

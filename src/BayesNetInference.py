@@ -16,8 +16,11 @@
 # This implementation is agnostic of the data and provides a general
 # implementation that can be used across datasets by providing a config file.
 #
+# Whilst Inference by Enumeration has been tested with discrete and Gaussian
+# Bayes nets, Rejection Sampling has only been tested with discrete Bayes nets.
+#
 # WARNINGS:
-#    (1) This code has been revised but not thoroughly tested.
+#    (1) This code has been revised with multiple cases but not thoroughly tested.
 #    (2) The execution time depends on the number of random samples.
 #
 # Version: 1.0, Date: 06 October 2022, 1st version of class BayesNetExactInference
@@ -38,10 +41,15 @@ from BayesNetReader import BayesNetReader
 class BayesNetInference(BayesNetReader):
     query = {}
     prob_dist = {}
+    verbose = False
 
     def __init__(self, alg_name, file_name, prob_query, num_samples):
         super().__init__(file_name)
-        self.query = bnu.tokenise_query(prob_query)
+
+        if alg_name is None and prob_query is None:
+            return
+
+        self.query = bnu.tokenise_query(prob_query, self.verbose)
 
         start = time.time()
         if alg_name == 'InferenceByEnumeration':
@@ -64,21 +72,26 @@ class BayesNetInference(BayesNetReader):
     # main method for inference by enumeration, which invokes
 	# enumerate_all() for each domain value of the query variable
     def enumeration_ask(self):
-        print("\nSTARTING Inference by Enumeration...")
-        Q = {}
-        for value in self.bn["rv_key_values"][self.query["query_var"]]:
-            value = value.split('|')[0]
-            Q[value] = 0
+        if self.verbose: print("\nSTARTING Inference by Enumeration...")
+
+        if "regression_models" not in self.bn:
+            # initialisation required for discrete Bayes nets
+            Q = {}
+            for value in self.bn["rv_key_values"][self.query["query_var"]]:
+                value = value.split('|')[0]
+                Q[value] = 0
+        else:
+            # initialisation required for Gaussian Bayes nets
+            Q = {0.0: 0, 1.0: 0}
 
         for value, probability in Q.items():
-            value = value.split('|')[0]
             variables = self.bn["random_variables"].copy()
             evidence = self.query["evidence"].copy()
             evidence[self.query["query_var"]] = value
             probability = self.enumerate_all(variables, evidence)
             Q[value] = probability
 
-        print("\tQ="+str(Q))
+        if self.verbose: print("\tQ="+str(Q))
         return Q # Q is an unnormalised probability distribution
 
     # returns a probability for the arguments provided, based on
@@ -90,7 +103,7 @@ class BayesNetInference(BayesNetReader):
         V = variables[0]
 
         if V in evidence:
-            v = evidence[V].split('|')[0]
+            v = str(evidence[V]).split('|')[0]
             p = bnu.get_probability_given_parents(V, v, evidence, self.bn)
             variables.pop(0)
             return p*self.enumerate_all(variables, evidence)
@@ -171,7 +184,7 @@ class BayesNetInference(BayesNetReader):
                 cumulative_cpt[v] = prob_mass
 
         # check that the probabilities sum to 1 (or almost)
-        if prob_mass < 0.999 or prob_mass > 1:
+        if prob_mass < 0.999 or prob_mass > 1.001:
             print("ERROR: probabilities=%s do not sum to 1" % (cumulative_cpt))
             exit(0)
 

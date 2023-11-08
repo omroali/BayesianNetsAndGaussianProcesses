@@ -9,6 +9,7 @@
 # Contact: hcuayahuitl@lincoln.ac.uk
 #############################################################################
 
+import numpy as np
 import networkx as nx
 
 
@@ -16,8 +17,8 @@ import networkx as nx
 # example dictionary: query={query_var:'B', evidence:'J=true,M=true'}
 # example tokenised dictionary: query={query_var:'B', evidence:{'J':'true','M':'true'}}
 # returns a tokenised dictionary as in the example above
-def tokenise_query(prob_query):
-    print("\nTOKENISING probabilistic query="+str(prob_query))
+def tokenise_query(prob_query, verbose= False):
+    if verbose: print("\nTOKENISING probabilistic query="+str(prob_query))
 
     query = {}
     prob_query = prob_query[2:]
@@ -32,7 +33,7 @@ def tokenise_query(prob_query):
             evidence[tokens[0]] = tokens[1]
         query["evidence"] = evidence
 
-    print("query="+str(query))
+    if verbose: print("query="+str(query))
     return query
 
 
@@ -49,21 +50,46 @@ def get_parents(child, bn):
     print("ERROR: Couldn't find parent(s) of variable "+str(child))
     exit(0)
 
-
-# returns the probability of tuple V=v given the evidence and Bayes Net provided
+# returns the probability of tuple V=v (where V is a random variable and
+# v is a domain value) given the evidence and Bayes Net (bn) provided
 def get_probability_given_parents(V, v, evidence, bn):
     parents = get_parents(V, bn)
+    is_gaussian = True if "regression_models" in bn else False
     probability = 0
-    if parents is None:
+
+    if parents is None and is_gaussian == False:
         cpt = bn["CPT("+V+")"]
         probability = cpt[v]
-    else:
+
+    elif parents is not None and is_gaussian == False:
         cpt = bn["CPT("+V+"|"+parents+")"]
         values = v
         for parent in parents.split(","):
             separator = "|" if values == v else ","
             values = values + separator + evidence[parent]
         probability = cpt[values]
+
+    elif parents is None and is_gaussian == True:
+        mean = bn["means"][V]
+        std = bn["stdevs"][V]
+        probability = get_gaussian_density(float(v), mean, std)
+        #print("V=%s v=%s mean=%s std=%s pd=%s p=%s" % (V, v, mean, std, prob_density, probability))
+
+    elif parents is not None and is_gaussian == True:
+        values = []
+        parent_list = parents.split(",")
+        for i in range(0, len(parent_list)):
+            values.append(float(evidence[parent_list[i]]))
+        values = np.asarray([values])
+        regressor = bn["regressors"][V]
+        pred_mean = regressor.predict(values)
+        std = bn["stdevs"][V]
+        probability = get_gaussian_density(float(v), pred_mean, std)
+        #print("V=%s v=%s mean=%s std=%s pd1=%s pd2=%s p=%s" % (V, v, pred_mean, pred_std, probA, probB, probability))
+
+    else:
+        print("ERROR: Don't know how to get probability for V="+str(V))
+        exit(0)
 
     return probability
 
@@ -120,7 +146,8 @@ def normalise(counts):
 
     distribution = {}
     for value, count in counts.items():
-        p = float(count/_sum)
+        if _sum == 0: p = 0.5 # default if _sum=0
+        else: p = float(count/_sum)
         distribution[value] = p
 
     return distribution
@@ -139,3 +166,9 @@ def has_cycles(edges):
     if cycles is False:
         print("No cycles found!")
     return cycles
+
+# returns the probability density of the given arguments
+def get_gaussian_density(x, mean, stdev):
+    e_val = -0.5*np.power((x-mean)/stdev, 2)
+    probability = (1/(stdev*np.sqrt(2*np.pi))) * np.exp(e_val)
+    return probability
