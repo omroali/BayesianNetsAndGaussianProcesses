@@ -33,6 +33,7 @@ import random
 import numpy as np
 import os.path
 from sklearn import metrics
+from sympy import use
 
 import BayesNetUtil as bnu
 from NB_Classifier import NB_Classifier
@@ -44,7 +45,8 @@ class ModelEvaluator(BayesNetInference):
     useBayesNet = True # False uses NaiveBayes, True uses BayesNet
     inference_time = None
 
-    def __init__(self, configfile_name, datafile_train, datafile_test):
+    def __init__(self, configfile_name, datafile_train, datafile_test, useBayesNet= False):
+        self.useBayesNet = useBayesNet
         if os.path.isfile(configfile_name):
             # loads Bayesian network stored in configfile_name, where
             # the None arguments prevent any inference at this time
