@@ -1,5 +1,4 @@
 from logging import config
-from re import sub
 import matplotlib
 from py import test
 from sklearn import naive_bayes
@@ -10,9 +9,7 @@ from ModelEvaluator import ModelEvaluator
 import BayesNetUtil as bnu
 import networkx as nx
 import matplotlib.pyplot as plt
-from itertools import combinations
 import utils
-
 
 def Task1a(train_data = 'data/lung_cancer-train.csv', test_args = 'I(Smoking,Coughing|Lung_cancer)'):
     ci = ConditionalIndependence(train_data, 'gsq')
@@ -79,12 +76,13 @@ def Task4LlAndBicofTask1():
     
 def testingNetworkX():
     G = nx.Graph() 
-    # G = nx.DiGraph() <- directed
+    # TG = nx.DiGraph() <- directed
     # G = nx.MultiGraph() <- multiple edges
     # G = nx.MultiDiGraph() <- multiple Directed 
     node1 = 1
     node2 = 2
     node3 = 3
+    
     
     
     # G.add_edge(1,2, weight=0.1)
@@ -94,56 +92,53 @@ def testingNetworkX():
     # G.add_node('C')
     # G.add_node(print)
     
-    edge_list = [(1,2), (2,3), (3,4), (3,5), (5,2)]
+    edge_list = [('A','C'), ('B','C'), ('C','D'), ('C','E')]
     # G = nx.from_edgelist(edge_list)
     G.add_edges_from(edge_list)
     
+    # nx.topological sort to <- dimi tip 
+    
     nx.draw_spring(G, with_labels=True)
     plt.show()
     
-def learningPCAlgo():
-    # Step 1    
-    nodeList = ['A', 'B', 'C', 'D', 'E']
     
-    TrueGraph = [('A', 'C'), ('B', 'C'), ('C', 'D'), ('C', 'E')]
+def buildingPCA():
     TG = nx.DiGraph()
-    TG.add_edges_from(TrueGraph)
+    node_list = ['A', 'B', 'C', 'D', 'E']
+    edge_list = [('A','C'), ('B','C'), ('C','D'), ('C','E')]
     
-    # fig, ax = plt.subplots(nrows=2, ncols=2)
+    TG.add_edges_from(edge_list)
     
-    plt.subplot(1, 2, 1)
+    G = nx.Graph()
+    G = utils.fullyConnectedGraph(node_list)
+    
+    plt.subplot(2,2,1)
     nx.draw_spring(TG, with_labels=True)
-
-
-    G = utils.fullyConnectedGraph(nodeList)
-    # nx.draw_spring(G, with_labels=True)
-    # plt.show()
     
-    ## Step 2: run an independance test between each node and remove an edge if they are independant
-    ## removeing edge
-    
-    G = utils.independenceOnNoCondition(G, TG)
-    plt.subplot(2, 2, 2)
+    plt.subplot(2,2,2)
     nx.draw_spring(G, with_labels=True)
+    
+    severed_edges = utils.removeConnectionsWithNoDirectionalPaths(G, TG)
+    print(severed_edges)
+    
+    plt.subplot(2,2,3)
+    nx.draw_spring(G, with_labels=True)
+    
+    
     plt.show()
-    
-    
-    # edges = list(G.edges())
-    # for edge in edges:
-    #     if edge not in TrueGraph:    
-    #         utils.removeEdge(G, edge)
-    #         # nx.draw_spring(G, with_labels=True)
-    #         # plt.show()
-    
-    
 
-        
+
+def testingIndependence():
+    data = utils.ChiIndependenceTest('data/lung_cancer-train.csv', 'I(Smoking,Anxiety|Coughing)')
+    
+    
+    
 if __name__ == "__main__":
     # train_data = 'data/lung_cancer-train.csv'
     # Task1a(train_data, 'I(Smoking,Coughing|Lung_cancer)',)
     # Task1a(train_data, 'I(Smoking,Car_Accident|Lung_cancer)')
     # Task1a(train_data, 'I(Anxiety,Fatigue|Lung_cancer)')
-    # Task1a(train_data, 'I(Anxiety,Aedges = combinations(nodes, 2)ttention_Disorder|Lung_cancer)')
+    # Task1a(train_data, 'I(Anxiety,Attention_Disorder|Lung_cancer)')
     # Task1a(train_data, 'I(Allergy,Fatigue|Lung_cancer)')
     # '''
     # Results:
@@ -172,6 +167,5 @@ if __name__ == "__main__":
     # plt.plot(100,100, G)
     # testingNetworkX()
     
-    
-    learningPCAlgo()
-    
+    # buildingPCA()
+    testingIndependence()
