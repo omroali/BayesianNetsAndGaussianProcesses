@@ -1,3 +1,7 @@
+from calendar import c
+from doctest import debug
+from logging import critical
+from turtle import st
 import numpy as np
 import csv
 
@@ -10,6 +14,14 @@ from ConditionalIndependence import ConditionalIndependence
 from matplotlib import pyplot as plt
 import networkx as nx
 from itertools import combinations
+
+# setting logging levels
+log_level = int(5)
+debug = int(5)
+info = int(4)
+warning = int(3)
+error = int(2)
+critical = int(1)
 
 
 def readCsv(filePath, *training: str):
@@ -457,31 +469,78 @@ def removeEdge(G, edge: list[str]):
 
 def immortalityTest(parentNodes: list[str], conditioningNode: str, TrueGraph: nx.DiGraph):
     immoralEdgeCheck = [(parent, conditioningNode) for parent in parentNodes]
-    print(immoralEdgeCheck)
     TrueGraphEdges = TrueGraph.edges()
-    print(TrueGraphEdges)
     for edge in immoralEdgeCheck:
         if edge not in TrueGraphEdges:
             return False
     return True
     
-def independenceOnNoCondition(G: nx.Graph, TrueGraph: nx.DiGraph) -> nx.Graph:
-    
+def independenceNoCondition(G: nx.Graph, TrueGraph: nx.DiGraph) -> tuple[nx.Graph, list[str]]:
     edges = list(G.edges())
     nodes = list(G.nodes())
+    conditioning_nodes = []
     
     for edge in edges:
         for node in nodes:
             if immortalityTest(edge, node, TrueGraph):
+                conditioning_nodes.append(node)
+                logging('EDGE REMOVAL', f'removing edge {edge} as it is immoral of {node}')
+                removeEdge(G, edge)
+    return G, conditioning_nodes
+
+def independenceTest(edge, conditional_node, TrueGraph: nx.DiGraph) -> bool:
+    ''' 
+    should check if there are any other paths that can be taken 
+    from a given node to another node in the graph
+    '''
+    all_shortest_paths = []
+    
+    # get all paths
+    if nx.has_path(TrueGraph, edge[0], edge[1]):
+        all_shortest_paths = getAllPathsWithoutConditionalNode(TrueGraph, edge[0], edge[1], conditional_node)
+        logging('SHORTEST PATHS',f'node 1: {edge[0]} - node 2: {edge[1]} - conditional_node: {conditional_node} - paths around conditional node: {list(all_shortest_paths)}')
+    if len(all_shortest_paths) == 0:
+        return True
+    if len(all_shortest_paths) == 1 and edge in all_shortest_paths:
+        return True
+    return False
+
+# def validate_path_evaluation(func):
+#     def validate(Graph: nx.Graph | nx.DiGraph, node_1: str, node_2: str, *cond_node: str, method = 'dijkstra'):
+#         if node_1 not in Graph.nodes() or node_2 not in Graph.nodes():
+#             raise ValueError("node_1 and node_2 must be in Graph")
+#         if cond_node and cond_node not in Graph.nodes():
+#             print(cond_node)
+#             raise ValueError("conditional node must be in Graph")
+#         if method not in ['dijkstra', 'bellman-ford']:
+#             raise ValueError("method must be 'dijkstra' or 'bellman-ford'")
+#         return func(Graph, node_1, node_2, method)
+#     return validate
+
+# @validate_path_evaluation
+def getAllPathsWithoutConditionalNode(Graph: nx.Graph | nx.DiGraph, node_1: str, node_2: str, cond_node: str, method = 'dijkstra') -> list[tuple[str, ...]]:
+    all_shortest_paths = getAllPathsBetweenNodes(Graph, node_1, node_2, method)
+    paths = [path for path in all_shortest_paths if cond_node not in path]
+    return paths
+
+# @validate_path_evaluation
+def getAllPathsBetweenNodes(Graph: nx.Graph | nx.DiGraph, node_1: str, node_2: str, method = 'dijkstra') -> list[tuple[str, ...]]:
+    paths = [tuple(path) for path in list(nx.all_shortest_paths(Graph, node_1, node_2, method=method))]
+    return paths
+
+def independenceOnCondition(G: nx.Graph, TrueGraph: nx.DiGraph, conditioningSet: list[str]) -> nx.Graph:
+    for conditional_node in conditioningSet:
+        # get all pairs of variables that are not connected to the conditioning node
+        edges = [edge for edge in list(G.edges()) if conditional_node not in edge]
+        
+        # identify the pairs that are independant (in the true graph) and remove them
+        for edge in edges:
+            nodes_are_independant = independenceTest(edge, conditional_node, TrueGraph)
+            if nodes_are_independant:
+                logging('EDGE REMOVAL',f'removing {edge} as it is independant of {conditional_node}')
                 removeEdge(G, edge)
     return G
 
-def independenceOnCondition(G: nx.Graph, TrueGraph: nx.DiGraph, conditioningSet: list[str]) -> nx.Graph:
-    # for all other pairs of variables (not the conditioningSet) 
-        # detect the ones that are independent
-    
-    for condition in conditioningSet:    
-        edges = list(G.edges())
-    return G
 
-    
+def logging(info:str, message):
+    print(f'{info}: {message}')
