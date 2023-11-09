@@ -1,3 +1,4 @@
+from tabnanny import check
 import networkx as nx
 from itertools import combinations
 from ConditionalIndependence import ConditionalIndependence
@@ -5,14 +6,46 @@ from ConditionalIndependence import ConditionalIndependence
 
 
 class PCA:
-    # graph = nx.Graph()
+    graph = nx.Graph()
     
     def __init__(self, variables: list[str]) -> None:
         # initialise empty fully connected graph
         self.graph = PCA.fullyConnectedGraph(variables, self.graph)
+        self.immoralNodes = []
     
     
+    def storeImmoralities(self, node: str, edge: list[str]) -> None:
+        self.immoralNodes.append([node, edge])
+        
+    def getEssentialGraph(self) -> nx.Graph:
+        return self.graph
     
+    
+    def identifySkeleton(self):
+        '''
+        get's the core skeleton shape given the independece conditions
+        '''
+        nodes = list(self.graph.nodes())
+        
+        
+        
+        
+        
+        raise NotImplementedError
+    
+    
+    def identifyImmoralities(self):
+        '''
+        get's the immoralities given the independce conditions and the edge orientations
+        '''
+        raise NotImplementedError
+    
+    def identifyQualifyingEdges(self):
+        '''
+        get's the edges that qualify for orientation given the collider (immoral) nodes
+        '''
+        raise NotImplementedError
+        
     
     #### static methods
     @staticmethod 
@@ -101,12 +134,32 @@ class PCA:
         raise NotImplementedError
     
     @staticmethod
-    def isImmoralPath():
+    def isImmoralPaths():
         '''
         X1 - X2 - X3
         X1 is independet of X3 conditional on Nothing
         '''
+        ## immortality test
+        
+        ## node directions
         raise NotImplementedError
+    
+    @staticmethod
+    def getSkeleton():
+        '''
+        gives us the structure of the graph
+        '''
+        
+        raise NotImplementedError
+    
+    
+    @staticmethod
+    def isMarkovEquivalent():
+        '''
+        1 check if 2 graphs have the same immoralities
+        2 check if the graphs have the same skeleton (v-structures)
+        '''
+        raise NotImplementedError    
     
     
     
