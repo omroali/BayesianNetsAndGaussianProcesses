@@ -21,7 +21,10 @@
 
 import sys  
 import numpy as np
-from causallearn.utils.cit import CIT
+from causallearn.utils.cit import CIT, Chisq_or_Gsq
+from causallearn.utils.cit import Chisq_or_Gsq as Chisq_or_Gsq
+
+# from CIT import Chisq_or_Gsq, FisherZ
 
 
 class ConditionalIndependence:
@@ -32,15 +35,20 @@ class ConditionalIndependence:
     continuous_data_tests = ['fisherz']
     discrete_data_tests = ['chisq', 'gsq']
     all_tests = continuous_data_tests + discrete_data_tests
+    test = ''
 
     def __init__(self, file_name, test='chisq'):
         data = self.read_data(file_name)
         if test not in self.all_tests:
-            print("ERROR: Unknown test type %s" % (test))
-            exit(0)
-        self.use_continuous_data = True if test in self.continuous_data_tests else False
-        print(f'Using test: {test}')
-        self.chisq_obj = CIT(data, test)
+            raise ValueError(f'ERROR: Unknown test type {test} please use one of {self.all_tests}')
+        self.test = test
+        self.use_continuous_data = True if self.test in self.continuous_data_tests else False
+        print(f'Using test: {self.test}')
+        if not self.use_continuous_data:
+            self.chisq_obj = Chisq_or_Gsq(data, self.test)
+        else:
+            raise NotImplementedError('Continuous data not yet supported')
+            # self.chisq_obj = CIT(data, self.test)
 
     def read_data(self, data_file):
         # print("\nREADING data file %s..." % (data_file))
@@ -61,59 +69,41 @@ class ConditionalIndependence:
         returnVals = np.array(self.rv_all_values) if self.use_continuous_data else self.rv_all_values
         return returnVals
 
-    def parse_test_args(self, test_args):
+    def parse_test_args(self, test_args) -> tuple[int, int, list[int]] :
         main_args = test_args[2:len(test_args)-1]
-        variables = main_args.split('|')[0]
-        Vi = variables.split(',')[0]
-        Vj = variables.split(',')[1]
-        parents_i = []
-        for parent in (main_args.split('|')[1].split(',')):
-            if parent.lower() == 'none':
-                continue
-            else:
-                parents_i.append(parent)
-
-        return Vi, Vj, parents_i
-
-    def get_var_index(self, target_variable):
-        for i in range(0, len(self.rand_vars)):
-            if self.rand_vars[i] == target_variable:
-                return i
-        print("ERROR: Couldn't find index of variable "+str(target_variable))
-        return None
-
-    def get_var_indexes(self, parent_variables):
-        if len(parent_variables) == 0:
-            return None
+        if (main_args.find('|')):
+            variables = main_args.split('|')[0].split(',')
+            parents = main_args.split('|')[1].split(',')
         else:
-            index_vector = []
-            for parent in parent_variables:
-                index_vector.append(self.get_var_index(parent))
-            return index_vector
-
-    def compute_pvalue(self, variable_i, variable_j, parents_i):
-        var_i = self.get_var_index(variable_i)
-        var_j = self.get_var_index(variable_j)
-        par_i = self.get_var_indexes(parents_i)
+            variables = main_args.split(',')
+            parents = []
+        
+        if len(variables) > 2:
+            raise Exception("ERROR: Only 2 variables Vi and Vj are supported")
+        return variables[0], variables[1], parents
+    
+    def compute_pvalue(self, var_i, var_j, parents):
+        var_i = self.rand_vars.index(var_i)
+        var_j = self.rand_vars.index(var_j)
+        pars = [self.rand_vars.index(par) for par in parents]
+        
         if self.chisq_obj is None:
-            print("ERROR: chisq_obj is None")
-            exit(0)
-        p = self.chisq_obj(var_i, var_j, par_i)
-
-        print("X2test: Vi=%s, Vj=%s, pa_i=%s, p=%s" %
-              (variable_i, variable_j, parents_i, p))
+            raise Exception("ERROR: chisq_obj is None")
+        
+        p = self.chisq_obj(var_i, var_j, pars)
+        print(f'X2test: {self.test} -> Vi={var_i}, Vj={var_j}, pars={pars}, p={p}')
         return p
 
-if __name__=="__main":
-    if len(sys.argv) != 3:
-        print("USAGE: ConditionalIndepencence.py [train_file.csv] [I(Vi,Vj|parents)]")
-        print("EXAMPLE1: python ConditionalIndependence.py lang_detect_train.csv \"I(X1,X2|Y)\“")
-        print("EXAMPLE2: python ConditionalIndependence.py lang_detect_train.csv \"I(X1,X15|Y)\“")
-        exit(0)
-    else:
-        data_file = sys.argv[1]
-        test_args = sys.argv[2]
+# if __name__=="__main":
+#     if len(sys.argv) != 3:
+#         print("USAGE: ConditionalIndepencence.py [train_file.csv] [I(Vi,Vj|parents)]")
+#         print("EXAMPLE1: python ConditionalIndependence.py lang_detect_train.csv \"I(X1,X2|Y)\“")
+#         print("EXAMPLE2: python ConditionalIndependence.py lang_detect_train.csv \"I(X1,X15|Y)\“")
+#         exit(0)
+#     else:
+#         data_file = sys.argv[1]
+#         test_args = sys.argv[2]
 
-        ci = ConditionalIndependence(data_file)
-        Vi, Vj, parents_i = ci.parse_test_args(test_args)
-        ci.compute_pvalue(Vi, Vj, parents_i)
+#         ci = ConditionalIndependence(data_file)
+#         V, parents_i = ci.parse_test_args(test_args)
+#         ci.compute_pvalue(V, parents_i)
