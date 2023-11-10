@@ -43,16 +43,41 @@ class PCStable:
     def initialiseEdges(self, conditioning_variables = []) -> list[Edge]:
         edges = []
         for edge in self.getGraphEdges():
-            if len(conditioning_variables) > 0:
-                for condition in conditioning_variables:
-                    # TODO: figuring out why edge is still being added even though condition not met
-                    if condition not in list(edge):
-                        edges.append(Edge(edge[0], edge[1], conditioning_variables, self.ci, []))
-                    continue 
-            else:
-                edges.append(Edge(edge[0], edge[1], [], self.ci, []))
+            self.make_edge_set(edges, edge, conditioning_variables)
         return edges
     
+    def make_edge_set(self, edges, edge, conditioning_variables) -> None:
+        '''
+        TODO: set up a better name
+        '''
+        if len(conditioning_variables) > 0:
+            for condition in conditioning_variables:
+                # TODO: figuring out why edge is still being added even though condition not met
+                if condition in list(edge):
+                    return
+                # else:
+            edges.append(Edge(edge[0], edge[1], conditioning_variables, self.ci, []))
+                 
+        else:
+            edges.append(Edge(edge[0], edge[1], [], self.ci, []))
+        
+    def independence_test(self, iterations):
+        # SOME_CONDITION = 0
+        # iterations = 0
+        # while (SOME_CONDITION):
+            parent_combinations = list(combinations(self.getGraphNodes(), iterations))
+            for conditionals in parent_combinations:
+                conditionals = list(conditionals)
+                edges_set_2 = self.initialiseEdges(conditionals)
+                # print(self.listNodeParents(edges_set_2))
+                for edge in edges_set_2:
+                    if edge.is_conditionally_independent:
+                        # remove the edge
+                        self.graph = PCStable.removeEdge(self.graph, [edge.var_i, edge.var_j])
+                    if edge.is_immoral:
+                        self.addImmorality(conditionals, [edge.var_i, edge.var_j]) 
+            # iterations += 1          
+        
     
     def identifySkeleton(self):
         '''
@@ -61,43 +86,64 @@ class PCStable:
         # Part 1: get all the edges with no parents
         edges = self.initialiseEdges()
         
-        self.drawPlot()
-        
-        # first pass, conditioning sets size 0
-        for edge in edges:
-            # independence test (vi, vj, [])
-            if edge.is_conditionally_independent:
-                # remove the edge
-                self.graph = PCStable.removeEdge(self.graph, [edge.var_i, edge.var_j])
+        # plt.subplot(2,2,1)
+        # nx.draw_spring(self.graph, with_labels=True)
 
-        self.drawPlot()
+
+        # # first pass, conditioning sets size
+        # self.independence_test(0)
+
+        # # for edge in edges:
+        # #     # independence test (vi, vj, [])
+        # #     if edge.is_conditionally_independent:
+        # #         # remove the edge
+        # #         self.graph = PCStable.removeEdge(self.graph, [edge.var_i, edge.var_j])
+                
+
+        # plt.subplot(2,2,2)
+        # nx.draw_spring(self.graph, with_labels=True)
+
         
-        # Part 2: get all the edges with 1 parent
-        for node in self.getGraphNodes():
-            edges_set_1 = self.initialiseEdges([node])
-            for edge in edges_set_1:
-                if edge.is_conditionally_independent:
-                    # remove the edge
-                    self.graph = PCStable.removeEdge(self.graph, [edge.var_i, edge.var_j])
-                if edge.is_immoral:
-                    self.addImmorality(node, [edge.var_i, edge.var_j])
+        # # Part 2: get all the edges with 1 parent
+        # self.independence_test(1)
+        # # for node in self.getGraphNodes():
+        # #     edges_set_1 = self.initialiseEdges([node])
+        # #     for edge in edges_set_1:
+        # #         if edge.is_conditionally_independent:
+        # #             # remove the edge
+        # #             self.graph = PCStable.removeEdge(self.graph, [edge.var_i, edge.var_j])
+        # #         if edge.is_immoral:
+        # #             self.addImmorality(node, [edge.var_i, edge.var_j])
                     
-        # self.drawPlot()            
-        # print('holup')
+        # plt.subplot(2,2,3)
+        # nx.draw_spring(self.graph, with_labels=True)
         
-        pair_combinations = list(combinations(self.getGraphNodes(), 2))
-        for conditionals in pair_combinations:
-            conditionals = list(conditionals)
-            edges_set_2 = self.initialiseEdges(conditionals)
-            for edge in edges_set_2:
-                if edge.is_conditionally_independent:
-                    # remove the edge
-                    self.graph = PCStable.removeEdge(self.graph, [edge.var_i, edge.var_j])
-                if edge.is_immoral:
-                    self.addImmorality(conditionals, [edge.var_i, edge.var_j])           
+        # # Part 3: get all the edges with 2 parents
+        # self.independence_test(2)
+        # # pair_combinations = list(combinations(self.getGraphNodes(), 2))
+        # # for conditionals in pair_combinations:
+        # #     conditionals = list(conditionals)
+        # #     edges_set_2 = self.initialiseEdges(conditionals)
+        # #     print(self.listNodeParents(edges_set_2))
+        # #     for edge in edges_set_2:
+        # #         if edge.is_conditionally_independent:
+        # #             # remove the edge
+        # #             self.graph = PCStable.removeEdge(self.graph, [edge.var_i, edge.var_j])
+        # #         if edge.is_immoral:
+        # #             self.addImmorality(conditionals, [edge.var_i, edge.var_j])           
         
-        # self.drawPlot()
-        # print('holup2')
+        # plt.subplot(2,2,4)
+        # nx.draw_spring(self.graph, with_labels=True)
+        plt.subplot(2,2,1)
+        nx.draw_spring(self.graph, with_labels=True)
+        for i in range(3):
+            self.independence_test(i)
+            plt.subplot(2,2,i+2)
+            nx.draw_spring(self.graph, with_labels=True)
+
+            
+        
+        plt.show()
         
         
         
@@ -130,6 +176,10 @@ class PCStable:
             #         self.storeImmoralities(node, edge)
         # raise NotImplementedError
     
+    @staticmethod
+    def listNodeParents(edges):
+        return [[edge.var_i, edge.var_j, edge.parents] for edge in edges]
+            
     def identifyImmoralities(self):
         '''
         get's the immoralities given the independence conditions and the edge orientations
@@ -253,13 +303,14 @@ if __name__ == '__main__':
     # # Step 3: Identify the remaining edges and orient them
     # self.identifyQualifyingEdges()
     
-conditioning_variables = ['a','b']
-edges = ['a','b','c','d','e'] 
-for edge in edges:
-    for con in conditioning_variables:
-        if con not in edge:
-            print(edge)
-        else:
-            break
+    # conditioning_variables = ['a','b']
+    # edges = [['a','f'],['b','d'],['e','g']] 
+    # for edge in edges:
+    #     for con in conditioning_variables:
+    #         if con not in edge:
+    #             print(f'edge: {edge}, cond: {con}')
+    #         else:
+    #             break
+    #     print(' ')
     
         
