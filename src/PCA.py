@@ -1,7 +1,12 @@
+from math import e
+from operator import is_
 from tabnanny import check
+from matplotlib import pyplot as plt
 import networkx as nx
 from itertools import combinations
-from ConditionalIndependence import ConditionalIndependence as CI 
+
+from requests import get
+from ConditionalIndependence import ConditionalIndependence as ci
 from edge import Edge
 
 
@@ -9,15 +14,15 @@ from edge import Edge
 class PCA:
     graph = nx.Graph()
     
-    def __init__(self, variables: list[str], data_path, method = 'chisq') -> None:
+    def __init__(self, data_path, method = 'chisq') -> None:
         # initialise empty fully connected graph
-        self.graph = PCA.fullyConnectedGraph(variables, self.graph)
-        self.ci = CI(data_path, method)
+        self.ci = ci(data_path, method)
+        self.variables = self.ci.rand_vars
+        self.graph = PCA.fullyConnectedGraph(self.variables, self.graph)
         self.immoralNodes = []
         self.markovChains = []
                 
-            
-    def addImmorality(self, node: str, edge: list[str]) -> None:
+    def addImmorality(self, node: str | list[str], edge: list[str]) -> None:
         self.immoralNodes.append([node, edge])
         
     def getImmoralities(self) -> list[list[str]]:
@@ -29,18 +34,88 @@ class PCA:
     def getMarkovChains(self) -> list[list[str]]:
         return self.markovChains    
         
-    def getGraphNodes(self) -> list[nx.Graph]:
+    def getGraphNodes(self) -> list[str]:
         return list(self.graph.nodes())
-    
 
     def getGraphEdges(self) -> list[nx.Graph]:
+        for edge in self.graph.edges():
+            Edge(edge[0], edge[1], [], self.ci, [])
         return list(self.graph.edges())
+    
+    def drawPlot(self):
+        nx.draw_spring(self.graph, with_labels=True)
+        plt.show()
+    
+    def initialiseEdges(self, conditioning_variables = []) -> list[Edge]:
+        edges = []
+        for edge in self.getGraphEdges():
+            if len(conditioning_variables) > 0:
+                for condition in conditioning_variables:
+                    # TODO: figuring out why edge is still being added even though condition not met
+                    if condition not in list(edge):
+                        edges.append(Edge(edge[0], edge[1], conditioning_variables, self.ci, []))
+                    continue 
+            else:
+                edges.append(Edge(edge[0], edge[1], [], self.ci, []))
+        return edges
+    
     
     def identifySkeleton(self):
         '''
         get's the core skeleton shape given the independence conditions
         '''
-        edges = list(self.graph.edges())
+        # Part 1: get all the edges with no parents
+        edges = self.initialiseEdges()
+        
+        self.drawPlot()
+        
+        # first pass, conditioning sets size 0
+        for edge in edges:
+            # independence test (vi, vj, [])
+            if edge.is_conditionally_independent:
+                # remove the edge
+                self.graph = PCA.removeEdge(self.graph, [edge.var_i, edge.var_j])
+
+        self.drawPlot()
+        
+        # Part 2: get all the edges with 1 parent
+        for node in self.getGraphNodes():
+            edges_set_1 = self.initialiseEdges([node])
+            for edge in edges_set_1:
+                if edge.is_conditionally_independent:
+                    # remove the edge
+                    self.graph = PCA.removeEdge(self.graph, [edge.var_i, edge.var_j])
+                if edge.is_immoral:
+                    self.addImmorality(node, [edge.var_i, edge.var_j])
+                    
+        self.drawPlot()            
+        print('holup')
+        
+        pair_combinations = list(combinations(self.getGraphNodes(), 2))
+        for conditionals in pair_combinations:
+            conditionals = list(conditionals)
+            edges_set_2 = self.initialiseEdges(conditionals)
+            for edge in edges_set_2:
+                if edge.is_conditionally_independent:
+                    # remove the edge
+                    self.graph = PCA.removeEdge(self.graph, [edge.var_i, edge.var_j])
+                if edge.is_immoral:
+                    self.addImmorality(conditionals, [edge.var_i, edge.var_j])           
+        
+        self.drawPlot()
+        print('holup2')
+        
+        
+        
+        # # Step 1: get all the edges with no parents
+        # raise NotImplementedError
+
+        # # Step 1.1: get all the edges
+        # raise NotImplementedError
+
+        
+        
+        # edges = list(self.graph.edges())
         
         # for edge in edges:
             # independence test chi (vi, vj)
@@ -59,8 +134,7 @@ class PCA:
             #         self.graph = PCA.removeEdge(self.graph, edge)
             #         # store the immoralities
             #         self.storeImmoralities(node, edge)
-        raise NotImplementedError
-    
+        # raise NotImplementedError
     
     def identifyImmoralities(self):
         '''
@@ -72,7 +146,7 @@ class PCA:
         '''
         get's the edges that qualify for orientation given the collider (immoral) nodes
         '''
-        raise NotImplementedError    
+        raise NotImplementedError
     
     ###################################################
     ############### STATIC METHODS ####################
@@ -142,27 +216,46 @@ class PCA:
 ################## OTHER ##########################
 ###################################################
 
-def buildingPCA():
-    TG = nx.DiGraph()
-    node_list = ['A', 'B', 'C', 'D', 'E']
-    edge_list = [('A','C'), ('B','C'), ('C','D'), ('C','E')]
+# def buildingPCA():
+#     TG = nx.DiGraph()
+#     node_list = ['A', 'B', 'C', 'D', 'E']
+#     edge_list = [('A','C'), ('B','C'), ('C','D'), ('C','E')]
     
-    TG.add_edges_from(edge_list)
+#     TG.add_edges_from(edge_list)
     
-    G = nx.Graph()
-    G = utils.fullyConnectedGraph(node_list)
+#     G = nx.Graph()
+#     G = utils.fullyConnectedGraph(node_list)
     
-    plt.subplot(2,2,1)
-    nx.draw_spring(TG, with_labels=True)
+#     plt.subplot(2,2,1)
+#     nx.draw_spring(TG, with_labels=True)
     
-    plt.subplot(2,2,2)
-    nx.draw_spring(G, with_labels=True)
+#     plt.subplot(2,2,2)
+#     nx.draw_spring(G, with_labels=True)
     
-    severed_edges = utils.removeConnectionsWithNoDirectionalPaths(G, TG)
-    print(severed_edges)
+#     severed_edges = utils.removeConnectionsWithNoDirectionalPaths(G, TG)
+#     print(severed_edges)
     
-    plt.subplot(2,2,3)
-    nx.draw_spring(G, with_labels=True)
+#     plt.subplot(2,2,3)
+#     nx.draw_spring(G, with_labels=True)
     
     
-    plt.show()
+#     plt.show()
+    
+    
+if __name__ == '__main__':
+
+    # pca = PCA('data/lung_cancer-train.csv')
+    pca = PCA('data/lung_cancer-train.csv')
+    pca.identifySkeleton()
+    # Step 0: setup a completely undirected graph
+    # self.graph
+    
+    # Step 1: get all the edges with no parents
+    # self.identifySkeleton()
+
+    # # Step 2: Identify the immoralities (v-structures) and orient them
+    # self.identifyImmoralities()
+    
+    # # Step 3: Identify the remaining edges and orient them
+    # self.identifyQualifyingEdges()
+        
