@@ -53,7 +53,6 @@ class Edge:
         '''
         return self.is_conditionally_independent and self.has_minimality and self.has_faithfulness
         
-        
     @property
     def is_conditionally_independent(self) -> bool:
         '''

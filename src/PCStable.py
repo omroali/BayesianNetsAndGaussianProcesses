@@ -85,96 +85,18 @@ class PCStable:
         '''
         # Part 1: get all the edges with no parents
         edges = self.initialiseEdges()
-        
-        # plt.subplot(2,2,1)
-        # nx.draw_spring(self.graph, with_labels=True)
 
-
-        # # first pass, conditioning sets size
-        # self.independence_test(0)
-
-        # # for edge in edges:
-        # #     # independence test (vi, vj, [])
-        # #     if edge.is_conditionally_independent:
-        # #         # remove the edge
-        # #         self.graph = PCStable.removeEdge(self.graph, [edge.var_i, edge.var_j])
-                
-
-        # plt.subplot(2,2,2)
-        # nx.draw_spring(self.graph, with_labels=True)
-
-        
-        # # Part 2: get all the edges with 1 parent
-        # self.independence_test(1)
-        # # for node in self.getGraphNodes():
-        # #     edges_set_1 = self.initialiseEdges([node])
-        # #     for edge in edges_set_1:
-        # #         if edge.is_conditionally_independent:
-        # #             # remove the edge
-        # #             self.graph = PCStable.removeEdge(self.graph, [edge.var_i, edge.var_j])
-        # #         if edge.is_immoral:
-        # #             self.addImmorality(node, [edge.var_i, edge.var_j])
-                    
-        # plt.subplot(2,2,3)
-        # nx.draw_spring(self.graph, with_labels=True)
-        
-        # # Part 3: get all the edges with 2 parents
-        # self.independence_test(2)
-        # # pair_combinations = list(combinations(self.getGraphNodes(), 2))
-        # # for conditionals in pair_combinations:
-        # #     conditionals = list(conditionals)
-        # #     edges_set_2 = self.initialiseEdges(conditionals)
-        # #     print(self.listNodeParents(edges_set_2))
-        # #     for edge in edges_set_2:
-        # #         if edge.is_conditionally_independent:
-        # #             # remove the edge
-        # #             self.graph = PCStable.removeEdge(self.graph, [edge.var_i, edge.var_j])
-        # #         if edge.is_immoral:
-        # #             self.addImmorality(conditionals, [edge.var_i, edge.var_j])           
-        
-        # plt.subplot(2,2,4)
-        # nx.draw_spring(self.graph, with_labels=True)
+        # Part 2: get the skeleton graph - I still don't trust
         plt.subplot(2,2,1)
         nx.draw_spring(self.graph, with_labels=True)
         for i in range(3):
             self.independence_test(i)
             plt.subplot(2,2,i+2)
             nx.draw_spring(self.graph, with_labels=True)
-
-            
-        
         plt.show()
         
         
         
-        # # Step 1: get all the edges with no parents
-        # raise NotImplementedError
-
-        # # Step 1.1: get all the edges
-        # raise NotImplementedError
-
-        
-        
-        # edges = list(self.graph.edges())
-        
-        # for edge in edges:
-            # independence test chi (vi, vj)
-            # copilot suggestion
-            # # get all possible paths between node and all other nodes
-            # paths = PCStable.getAllPathsBetweenNodes(self.graph, node, None)
-            # # get all possible paths without the conditional node
-            # paths_without_cond = PCStable.getAllPathsWithoutConditionalNode(self.graph, node, None, None)
-            
-             # if there are paths without the conditional node, then we have a v-structure
-            # if len(paths) != len(paths_without_cond):
-            #     # get the edges that are not in the paths without the conditional node
-            #     edges = [edge for edge in paths if edge not in paths_without_cond]
-            #     # remove the edges that are not in the paths without the conditional node
-            #     for edge in edges:
-            #         self.graph = PCStable.removeEdge(self.graph, edge)
-            #         # store the immoralities
-            #         self.storeImmoralities(node, edge)
-        # raise NotImplementedError
     
     @staticmethod
     def listNodeParents(edges):
