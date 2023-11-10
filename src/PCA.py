@@ -1,42 +1,70 @@
 from tabnanny import check
 import networkx as nx
 from itertools import combinations
-from ConditionalIndependence import ConditionalIndependence
+from ConditionalIndependence import ConditionalIndependence as CI 
+from edge import Edge
 
 
 
 class PCA:
     graph = nx.Graph()
     
-    def __init__(self, variables: list[str]) -> None:
+    def __init__(self, variables: list[str], data_path, method = 'chisq') -> None:
         # initialise empty fully connected graph
         self.graph = PCA.fullyConnectedGraph(variables, self.graph)
+        self.ci = CI(data_path, method)
         self.immoralNodes = []
-    
-    
-    def storeImmoralities(self, node: str, edge: list[str]) -> None:
+        self.markovChains = []
+                
+            
+    def addImmorality(self, node: str, edge: list[str]) -> None:
         self.immoralNodes.append([node, edge])
         
-    def getEssentialGraph(self) -> nx.Graph:
-        return self.graph
+    def getImmoralities(self) -> list[list[str]]:
+        return self.immoralNodes
     
+    def addMarkovChain(self, vi: str, vj: str, parents: list[str]) -> None:
+        self.markovChains.append([vi, vj, parents])
+    
+    def getMarkovChains(self) -> list[list[str]]:
+        return self.markovChains    
+        
+    def getGraphNodes(self) -> list[nx.Graph]:
+        return list(self.graph.nodes())
+    
+
+    def getGraphEdges(self) -> list[nx.Graph]:
+        return list(self.graph.edges())
     
     def identifySkeleton(self):
         '''
-        get's the core skeleton shape given the independece conditions
+        get's the core skeleton shape given the independence conditions
         '''
-        nodes = list(self.graph.nodes())
+        edges = list(self.graph.edges())
         
-        
-        
-        
-        
+        # for edge in edges:
+            # independence test chi (vi, vj)
+            # copilot suggestion
+            # # get all possible paths between node and all other nodes
+            # paths = PCA.getAllPathsBetweenNodes(self.graph, node, None)
+            # # get all possible paths without the conditional node
+            # paths_without_cond = PCA.getAllPathsWithoutConditionalNode(self.graph, node, None, None)
+            
+             # if there are paths without the conditional node, then we have a v-structure
+            # if len(paths) != len(paths_without_cond):
+            #     # get the edges that are not in the paths without the conditional node
+            #     edges = [edge for edge in paths if edge not in paths_without_cond]
+            #     # remove the edges that are not in the paths without the conditional node
+            #     for edge in edges:
+            #         self.graph = PCA.removeEdge(self.graph, edge)
+            #         # store the immoralities
+            #         self.storeImmoralities(node, edge)
         raise NotImplementedError
     
     
     def identifyImmoralities(self):
         '''
-        get's the immoralities given the independce conditions and the edge orientations
+        get's the immoralities given the independence conditions and the edge orientations
         '''
         raise NotImplementedError
     
@@ -44,15 +72,16 @@ class PCA:
         '''
         get's the edges that qualify for orientation given the collider (immoral) nodes
         '''
-        raise NotImplementedError
-        
+        raise NotImplementedError    
     
-    #### static methods
+    ###################################################
+    ############### STATIC METHODS ####################
+    ###################################################
+    
     @staticmethod 
     def listFullyConnectedEdges(nodes: list[str]) -> list[tuple[str, str]]:
         edges = combinations(nodes, 2)
         return list(edges)
-    
     
     @staticmethod
     def fullyConnectedGraph(nodes: list[str], G = nx.Graph()) -> nx.Graph:
@@ -63,12 +92,10 @@ class PCA:
         G.add_edges_from(edges)
         return G
     
-    
     @staticmethod
     def removeEdge(G: nx.Graph | nx.DiGraph, edge: list[str]) -> nx.Graph | nx.DiGraph:
         G.remove_edge(edge[0], edge[1])
         return G
-    
     
     @staticmethod
     def validate_path_evaluation(func):
@@ -94,64 +121,13 @@ class PCA:
         all_shortest_paths = PCA.getAllPathsBetweenNodes(Graph, node_1, node_2, method)
         paths = [path for path in all_shortest_paths if cond_node not in path]
         return paths
-    
-    
-    @staticmethod
-    def passesMarkov():
-        '''
-        X1 - X2 - X3
-        X1 is dependet of X3 conditional on X2
-        '''
-        raise NotImplementedError
- 
-    @staticmethod
-    def passesMinimality():
-        '''
-        X1 - X2 - X3
-        X1 is independet of X2 AND X2 is independet of X3 conditional on Nothing
-        '''
-        raise NotImplementedError
 
- 
-    @staticmethod
-    def passesFaithfulness():
-        '''
-        X1 - X2 - X3
-        X1 is independet of X3
-        '''
-        raise NotImplementedError
-    
-    @staticmethod
-    def isChainPath():
-        raise NotImplementedError
- 
-    @staticmethod
-    def isForkPath():
-        '''
-        X1 - X2 - X3
-        X1 is dependet of X3 conditional on Nothing
-        '''
-        raise NotImplementedError
-    
-    @staticmethod
-    def isImmoralPaths():
-        '''
-        X1 - X2 - X3
-        X1 is independet of X3 conditional on Nothing
-        '''
-        ## immortality test
-        
-        ## node directions
-        raise NotImplementedError
-    
     @staticmethod
     def getSkeleton():
         '''
         gives us the structure of the graph
         '''
-        
         raise NotImplementedError
-    
     
     @staticmethod
     def isMarkovEquivalent():
@@ -161,17 +137,10 @@ class PCA:
         '''
         raise NotImplementedError    
     
-    
-    
-    #### validation methods 
        
-
-    
-    
-
-
-
-### U
+###################################################
+################## OTHER ##########################
+###################################################
 
 def buildingPCA():
     TG = nx.DiGraph()
