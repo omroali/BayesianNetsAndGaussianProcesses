@@ -93,6 +93,27 @@ class ConditionalIndependence:
         p = self.chisq_obj(var_i, var_j, pars)
         print(f'X2test: {self.test} -> Vi={var_i}, Vj={var_j}, pars={pars}, p={p}')
         return p
+    
+    @staticmethod
+    def ChiIndependenceTest(train_data_path: str, var_i: str, var_j: str, parents: list[str] = []):
+        ci = ConditionalIndependence(train_data_path, 'chisq')
+        p = ci.compute_pvalue(var_i, var_j, parents)
+        return p
+    
+    @staticmethod
+    def GsqIndependenceTest(train_data_path: str, var_i: str, var_j: str, parents: list[str] = [], test = 'gsq'):
+        if test not in ConditionalIndependence.all_tests:
+            raise ValueError(f'ERROR: Unknown test type {test} please use one of {ConditionalIndependence.all_tests}')
+        ci = ConditionalIndependence(train_data_path, 'gsq')
+        p = ci.compute_pvalue(var_i, var_j, parents)
+        return p
+
+    ########### Continuous Tests ###########
+    @staticmethod
+    def fisherzIndependenceTest(train_data_path, test_args = 'I(Smoking,Coughing|Lung_cancer)'):
+        # TODO:
+        raise NotImplementedError('Continuous data not yet supported')
+    
 
 # if __name__=="__main":
 #     if len(sys.argv) != 3:
