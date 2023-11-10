@@ -1,24 +1,18 @@
-from math import e
-from operator import is_
-from tabnanny import check
 from matplotlib import pyplot as plt
 import networkx as nx
 from itertools import combinations
 
-from requests import get
 from ConditionalIndependence import ConditionalIndependence as ci
 from edge import Edge
 
-
-
-class PCA:
+class PCStable:
     graph = nx.Graph()
     
     def __init__(self, data_path, method = 'chisq') -> None:
         # initialise empty fully connected graph
         self.ci = ci(data_path, method)
         self.variables = self.ci.rand_vars
-        self.graph = PCA.fullyConnectedGraph(self.variables, self.graph)
+        self.graph = PCStable.fullyConnectedGraph(self.variables, self.graph)
         self.immoralNodes = []
         self.markovChains = []
                 
@@ -37,7 +31,7 @@ class PCA:
     def getGraphNodes(self) -> list[str]:
         return list(self.graph.nodes())
 
-    def getGraphEdges(self) -> list[nx.Graph]:
+    def getGraphEdges(self) -> list[str]:
         for edge in self.graph.edges():
             Edge(edge[0], edge[1], [], self.ci, [])
         return list(self.graph.edges())
@@ -74,7 +68,7 @@ class PCA:
             # independence test (vi, vj, [])
             if edge.is_conditionally_independent:
                 # remove the edge
-                self.graph = PCA.removeEdge(self.graph, [edge.var_i, edge.var_j])
+                self.graph = PCStable.removeEdge(self.graph, [edge.var_i, edge.var_j])
 
         self.drawPlot()
         
@@ -84,12 +78,12 @@ class PCA:
             for edge in edges_set_1:
                 if edge.is_conditionally_independent:
                     # remove the edge
-                    self.graph = PCA.removeEdge(self.graph, [edge.var_i, edge.var_j])
+                    self.graph = PCStable.removeEdge(self.graph, [edge.var_i, edge.var_j])
                 if edge.is_immoral:
                     self.addImmorality(node, [edge.var_i, edge.var_j])
                     
-        self.drawPlot()            
-        print('holup')
+        # self.drawPlot()            
+        # print('holup')
         
         pair_combinations = list(combinations(self.getGraphNodes(), 2))
         for conditionals in pair_combinations:
@@ -98,12 +92,12 @@ class PCA:
             for edge in edges_set_2:
                 if edge.is_conditionally_independent:
                     # remove the edge
-                    self.graph = PCA.removeEdge(self.graph, [edge.var_i, edge.var_j])
+                    self.graph = PCStable.removeEdge(self.graph, [edge.var_i, edge.var_j])
                 if edge.is_immoral:
                     self.addImmorality(conditionals, [edge.var_i, edge.var_j])           
         
-        self.drawPlot()
-        print('holup2')
+        # self.drawPlot()
+        # print('holup2')
         
         
         
@@ -121,9 +115,9 @@ class PCA:
             # independence test chi (vi, vj)
             # copilot suggestion
             # # get all possible paths between node and all other nodes
-            # paths = PCA.getAllPathsBetweenNodes(self.graph, node, None)
+            # paths = PCStable.getAllPathsBetweenNodes(self.graph, node, None)
             # # get all possible paths without the conditional node
-            # paths_without_cond = PCA.getAllPathsWithoutConditionalNode(self.graph, node, None, None)
+            # paths_without_cond = PCStable.getAllPathsWithoutConditionalNode(self.graph, node, None, None)
             
              # if there are paths without the conditional node, then we have a v-structure
             # if len(paths) != len(paths_without_cond):
@@ -131,7 +125,7 @@ class PCA:
             #     edges = [edge for edge in paths if edge not in paths_without_cond]
             #     # remove the edges that are not in the paths without the conditional node
             #     for edge in edges:
-            #         self.graph = PCA.removeEdge(self.graph, edge)
+            #         self.graph = PCStable.removeEdge(self.graph, edge)
             #         # store the immoralities
             #         self.storeImmoralities(node, edge)
         # raise NotImplementedError
@@ -160,7 +154,7 @@ class PCA:
     @staticmethod
     def fullyConnectedGraph(nodes: list[str], G = nx.Graph()) -> nx.Graph:
         # using the combinations method from itertools to create all possible edges
-        edges = PCA.listFullyConnectedEdges(nodes)
+        edges = PCStable.listFullyConnectedEdges(nodes)
         # setting up the graphs
         G.add_nodes_from(nodes)
         G.add_edges_from(edges)
@@ -192,7 +186,7 @@ class PCA:
     
     @staticmethod
     def getAllPathsWithoutConditionalNode(Graph: nx.Graph | nx.DiGraph, node_1: str, node_2: str, cond_node: str, method = 'dijkstra') -> list[tuple[str, ...]]:
-        all_shortest_paths = PCA.getAllPathsBetweenNodes(Graph, node_1, node_2, method)
+        all_shortest_paths = PCStable.getAllPathsBetweenNodes(Graph, node_1, node_2, method)
         paths = [path for path in all_shortest_paths if cond_node not in path]
         return paths
 
@@ -216,7 +210,7 @@ class PCA:
 ################## OTHER ##########################
 ###################################################
 
-# def buildingPCA():
+# def buildingPCStable():
 #     TG = nx.DiGraph()
 #     node_list = ['A', 'B', 'C', 'D', 'E']
 #     edge_list = [('A','C'), ('B','C'), ('C','D'), ('C','E')]
@@ -244,9 +238,9 @@ class PCA:
     
 if __name__ == '__main__':
 
-    # pca = PCA('data/lung_cancer-train.csv')
-    pca = PCA('data/lung_cancer-train.csv')
-    pca.identifySkeleton()
+    # PCStable = PCStable('data/lung_cancer-train.csv')
+    pcs = PCStable('data/lung_cancer-train.csv')
+    pcs.identifySkeleton()
     # Step 0: setup a completely undirected graph
     # self.graph
     
@@ -258,4 +252,14 @@ if __name__ == '__main__':
     
     # # Step 3: Identify the remaining edges and orient them
     # self.identifyQualifyingEdges()
+    
+conditioning_variables = ['a','b']
+edges = ['a','b','c','d','e'] 
+for edge in edges:
+    for con in conditioning_variables:
+        if con not in edge:
+            print(edge)
+        else:
+            break
+    
         
