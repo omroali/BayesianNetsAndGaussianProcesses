@@ -33,10 +33,29 @@ class Edge:
     
     @property
     def is_multi_parent(self) -> bool:
+        '''
+        Check if the edge has more than one parent
+        '''
         return len(self.parents) > 1
+    
+    @property
+    def is_parentless(self) -> bool:
+        '''
+        Check if the edge has more than one parent
+        '''
+        return len(self.parents) == 0
 
     @property
-    def has_markov(self) -> bool:
+    def markov_approved(self) -> bool:
+        ''' 
+        TODO: RENAME
+        this mean it has_markov, has_minimality, has_faithfulness
+        '''
+        return self.is_conditionally_independent and self.has_minimality and self.has_faithfulness
+        
+        
+    @property
+    def is_conditionally_independent(self) -> bool:
         '''
         Vi - P[] - Vj
         condition V1 independent of V2 given P[]
@@ -52,6 +71,8 @@ class Edge:
         '''
         if self.is_multi_parent:
             raise ValueError('ERROR: Only one parent is currently support for current minimality test')
+        if self.is_parentless:
+            return True
         cond_1 = self.is_independent(self.var_i, self.var_j, [])
         cond_2 = self.is_independent(self.parents[0], self.var_i, [])
         
@@ -76,15 +97,15 @@ class Edge:
         
         return cond_1 and cond_2
             
-    @property
-    def is_chain(self) -> bool:
-        '''MAY NOT BE IMPLEMENTABLE UNLESS THE GRAPH IS CONNECTED UP WITH THE IMMORALITIES'''
-        raise NotImplementedError
+    # @property
+    # def is_chain(self) -> bool:
+    #     '''MAY NOT BE IMPLEMENTABLE UNLESS THE GRAPH IS CONNECTED UP WITH THE IMMORALITIES'''
+    #     raise NotImplementedError
     
-    @property
-    def is_fork(self) -> bool:
-        '''MAY NOT BE IMPLEMENTABLE UNLESS THE GRAPH IS CONNECTED UP WITH THE IMMORALITIES'''
-        raise NotImplementedError
+    # @property
+    # def is_fork(self) -> bool:
+    #     '''MAY NOT BE IMPLEMENTABLE UNLESS THE GRAPH IS CONNECTED UP WITH THE IMMORALITIES'''
+    #     raise NotImplementedError
     
     ###################################################
     ############### STATIC METHODS ####################
@@ -94,12 +115,12 @@ class Edge:
     def independence_test(ci: ci, var_i: str, var_j: str, parents: list[str], threshold: float) -> bool:
         return float(ci.compute_pvalue(var_i, var_j, parents)) < threshold 
     
-    @staticmethod
-    def has_markov_equivalence(edge1, edge2) -> bool:
-        '''
-        2 edges are markov equivalent if:
-        condition 1: they both have has_markov independence
-        condition 2: has_minimality
-        condition 3: has_faithfulness
-        '''
-        raise NotImplementedError        
+    # @staticmethod
+    # def has_markov_equivalence(edge1, edge2) -> bool:
+    #     '''
+    #     2 edges are markov equivalent if:
+    #     condition 1: they both have has_markov independence
+    #     condition 2: has_minimality
+    #     condition 3: has_faithfulness
+    #     '''
+    #     raise NotImplementedError        
