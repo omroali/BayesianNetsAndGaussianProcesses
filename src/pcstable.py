@@ -117,33 +117,29 @@ class PCStable:
                 if v_j == v_i: continue
                 paths = list(nx.all_simple_edge_paths(self.graph, source = v_i, target = v_j, cutoff=connections))
                 for path in paths:
-                    if len(path) == connections:
+                    if len(path)-1 == connections:
                         parents = set(node for edge in path for node in edge if node not in [v_i, v_j])
                         output.append([v_i, v_j ,parents])
-                        
-                # remove vi
-                # remove vj
-                
-        
-        # if connections > 0 and len(output) == 0
         return output
-                     
-    def getting_connected_nodes_for_path_length_ALTERNATIVE(self, connections = 1):
-        if connections == 0:
-            raise ValueError("Connections must have a value larger than 1")
-        output = {}
-        for v_i in self.all_nodes:
-            for v_j in self.all_nodes:
+    
+    def getting_connected_nodes_for_path_length_new(self, connections = 0):
+        # connections = path_cutoff or 1
+        output = []
+        nodes = list(self.all_nodes)
+        for v_i in nodes:
+            # v_i = nodes.pop(0)
+            for v_j in nodes:
                 if v_j == v_i: continue
-                print(f'v_i = {v_i}, v_j = {v_j}')
-                paths = list(nx.all_simple_edge_paths(self.graph, source = v_i, target = v_j, cutoff=connections))
-                for path in paths:
-                    if len(path) == connections:
-                        parents = set(node for edge in path for node in edge if node not in [v_i, v_j])
-                        par_str = ','.join(list(parents))
-                        if par_str not in output.keys():
-                            output[par_str] = []
-                        output[par_str].append([v_i,v_j])
+                if connections == 0:
+                    output.append([v_i, v_j ,[]])
+                    continue
+                for node in nodes:
+                    paths = list(nx.all_simple_edge_paths(self.graph, source = v_i, target = node, cutoff=connections))
+                    for path in paths:
+                        if len(path) != connections: continue
+                        parents = list(set(node for edge in path for node in edge if node not in [v_i, v_j]))
+                        if len(parents) != connections: continue
+                        output.append([v_i, v_j ,parents])
         return output
                      
     
@@ -153,17 +149,6 @@ class PCStable:
         for edge in all_edges:
             parent_nodes = list(nx.all_simple_edge_paths(self.graph, source = edge[0], target = edge[1], cutoff=connections))
         print(parent_nodes)
-        # paths = nx.all_simple_paths(self.graph, source=0, target=3, cutoff=2)
-        
-        # Magic sauce
-        # for adjacent_nodes in adjacent_nodes_list:
-        #     for node in adjacent_nodes[1].keys():
-        #         continue
-        #         # adjacent_nodes_output[adjacent_nodes[0]] = f
-        #         # 1. find node in adjacent_nodes_list 
-        #         # 2. create a pair but if on iteration 3, do it again (recursively)
-        
-        # return [['hi']]
     
     @property    
     def all_adjacent_nodes(self) -> list[list[str]]:
