@@ -2,6 +2,8 @@ from matplotlib import pyplot as plt
 import networkx as nx
 from itertools import combinations
 
+from sklearn import neighbors
+
 from ConditionalIndependence import ConditionalIndependence as ci
 from edge import Edge
 
@@ -42,33 +44,8 @@ class PCStable:
         return list(self.graph.edges())
     
     def drawPlot(self):
-        nx.draw_spring(self.graph, with_labels=True)
+        nx.draw_shell(self.graph, with_labels=True)
         plt.show()
-    
-    # def initialise_edges(self, conditioning_variables:list[str] = []) -> list[Edge]:
-    #     '''
-    #     initialise new edges for evaluation in a given iteration of a skeleton structure
-    #     @param conditioning_variables list(str)is an array of connected nodes between the edges
-    #     @return list[edge<[vi,vj,[conditioning_nodes],...]>]
-    #     '''
-    #     # edges = []
-    #     # for edge in self.getGraphEdges():
-    #     #     self.create_valid_edge_set(edges, edge, conditioning_variables)
-    #     # FIXME: pls
-    #     raise NotImplementedError('I THINK REDUNDANT, DELETE IF YOU SEE LATER')
-    #     return edges
-    
-    # def create_valid_edge_set(self, edges, edge, conditioning_variables:list[str] = []) -> None:
-    #     '''
-    #     create edge<[vi,vj, [list[parents]]> structure so long as edge is not 
-    #     contained in the parents 
-    #     '''
-    #     if len(conditioning_variables) > 0:
-    #         for condition in conditioning_variables:
-    #             if condition in list(edge): return
-    #             edges.append(Edge(edge[0], edge[1], conditioning_variables, self.ci, []))
-    #     else:
-    #         edges.append(Edge(edge[0], edge[1], [], self.ci, []))
 
     def create_valid_path_set(self, paths) -> list[Edge]:
         '''
@@ -126,6 +103,7 @@ class PCStable:
         # connections = path_cutoff or 1
         output = []
         nodes = list(self.all_nodes)
+        
         for v_i in nodes:
             # v_i = nodes.pop(0)
             for v_j in nodes:
@@ -133,6 +111,7 @@ class PCStable:
                 if connections == 0:
                     output.append([v_i, v_j ,[]])
                     continue
+                
                 for node in nodes:
                     paths = list(nx.all_simple_edge_paths(self.graph, source = v_i, target = node, cutoff=connections))
                     for path in paths:
@@ -140,8 +119,8 @@ class PCStable:
                         parents = list(set(node for edge in path for node in edge if node not in [v_i, v_j]))
                         if len(parents) != connections: continue
                         output.append([v_i, v_j ,parents])
+
         return output
-                     
     
     def all_paths_nodes(self, connections):# -> list[list[str]]:
         all_edges = list(combinations(self.all_nodes(), 2))
@@ -150,20 +129,43 @@ class PCStable:
             parent_nodes = list(nx.all_simple_edge_paths(self.graph, source = edge[0], target = edge[1], cutoff=connections))
         print(parent_nodes)
     
-    @property    
-    def all_adjacent_nodes(self) -> list[list[str]]:
-        adjacent_nodes_list = list(self.graph.adjacency())
-        adjacent_nodes_output = []
+    def getting_nodes_parent_sets_for_independence_testing(self, connections = 0):
+        # connections = path_cutoff or 1
+        output = []
+        nodes = list(self.all_nodes)
+        
+        for v_i in nodes:
+            for v_j in nodes:
+                if v_j == v_i: continue
+                if connections == 0:
+                    output.append([v_i, v_j ,[]])
+                    continue
+                
+                # for node in nodes:
+                adjacent_sets = self.all_adjacent_nodes(v_i, connections)
+                for set in adjacent_sets:
+                    if v_i in set or v_j in set: continue
+                    output.append([v_i, v_j, set])
+        return output
+    
+    def all_adjacent_nodes(self, node, connections):# -> list[list[str]]:        
+        # for node in self.all_nodes:
+        neighbors = list(self.graph.neighbors(node))
+        parents_combinations = set(combinations(neighbors, connections))
+        return [list(combo) for combo in parents_combinations]
+
+
         
         # Magic sauce
-        # paths = nx.all_simple_paths(self.graph, source=0, target=3, cutoff=2)
-        for adjacent_nodes in adjacent_nodes_list:
-            for node in adjacent_nodes[1].keys():
-                continue
-                # adjacent_nodes_output[adjacent_nodes[0]] = f
-                # 1. find node in adjacent_nodes_list 
-                # 2. create a pair but if on iteration 3, do it again (recursively)
-        return [['hi']]
+        
+        # set(list(combinations(adjacent_nodes_list[0][1].keys(), 2)))
+        # for adjacent_nodes in adjacent_nodes_list:
+        #     for node in adjacent_nodes[1].keys():
+        #         continue
+        #         # adjacent_nodes_output[adjacent_nodes[0]] = f
+        #         # 1. find node in adjacent_nodes_list 
+        #         # 2. create a pair but if on iteration 3, do it again (recursively)
+        return adjacent_nodes_list
         
     def identifySkeleton(self, with_subplots = False, iterations = 3):
     #     '''
