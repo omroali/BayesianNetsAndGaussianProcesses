@@ -10,9 +10,14 @@ from edge import Edge
 class PCStable:
     graph = nx.Graph()
     
-    def __init__(self, data_path, method = 'chisq', independence_threshold = 0.01) -> None:
+    def __init__(self, data, method = 'chisq', independence_threshold = 0.01) -> None:
+        if data == None:
+            raise ValueError('data cannot be None, must be an instance of ConditionalIndependence or a path to training csv file')
+        if type(data) == str:
+            self.ci = ci(data, method)
+        elif type(data) == ci:
+            self.ci = data
         # initialise empty fully connected graph
-        self.ci = ci(data_path, method)
         self.variables = self.ci.rand_vars
         self.graph = PCStable.fully_connected_graph(self.variables, self.graph)
         self.immoralNodes = []
@@ -62,6 +67,24 @@ class PCStable:
             
             edges.append(Edge(v_i, v_j, parents, conditional_independence_test=self.ci, threshold = self.independence_threshold))
         return edges
+    
+    def copy(self):
+        '''
+        Method to copy the PCStable object for temporary use
+        '''
+        copy = PCStable(
+            data = self.ci,
+            method = self.ci.test,
+            independence_threshold = self.independence_threshold 
+        )
+        
+        copy.variables = self.ci.rand_vars
+        copy.graph = PCStable.fully_connected_graph(self.variables, self.graph)
+        copy.immoralNodes = self.immoralNodes
+        copy.markovChains = self.markovChains
+        copy.all_nodes = self.all_nodes
+        
+        return copy
     
     # def independence_test(self):
     #     # TODO: SOME_CONDITION while the independence test continues to keep running
