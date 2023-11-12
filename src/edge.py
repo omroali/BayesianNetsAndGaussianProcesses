@@ -6,15 +6,15 @@ class Edge:
             var_i: str, 
             var_j: str, 
             parents: list[str], 
-            ci: ci, 
+            conditional_independence_test: ci, 
             remaining_nodes: list[str] = [],
-            threshold: float = 0.05,
+            threshold: float = 0.01,
         ):
         self.var_i = var_i
         self.var_j = var_j 
         self.parents = parents
         self.remaining_nodes = []
-        self.ci = ci
+        self.conditional_independence_test = conditional_independence_test
         self.independence_threshold = threshold
         
     ###################################################
@@ -22,10 +22,10 @@ class Edge:
     ###################################################
     
     def is_independent(self, var_i: str, var_j: str, parents: list[str]) -> bool:
-        return self.independence_test(self.ci, var_i, var_j, parents, self.independence_threshold)
+        return self.independence_test(self.conditional_independence_test, var_i, var_j, parents, self.independence_threshold)
     
     def is_dependent(self, var_i: str, var_j: str, parents: list[str]) -> bool:
-        return not self.independence_test(self.ci, var_i, var_j, parents, self.independence_threshold)
+        return not self.independence_test(self.conditional_independence_test, var_i, var_j, parents, self.independence_threshold)
     
     ###################################################
     ################# PROPERTIES ######################
@@ -54,12 +54,16 @@ class Edge:
         return self.is_conditionally_independent and self.has_minimality and self.has_faithfulness
         
     @property
-    def is_conditionally_independent(self) -> bool:
+    def is_conditionally_independent(self):# -> bool:
         '''
         Vi - P[] - Vj
         condition V1 independent of V2 given P[]
         '''
-        return float(self.ci.compute_pvalue(self.var_i, self.var_j, self.parents)) < self.independence_threshold
+        test = float(self.conditional_independence_test.compute_pvalue(self.var_i, self.var_j, self.parents))
+        # if test > self.independence_threshold:
+            # print(f'X2test: Vi={self.var_i}, Vj={self.var_j}, pa_i={self.parents}, p={test}')
+        return test  > self.independence_threshold, test
+        # float(self.conditional_independence_test.compute_pvalue(self.var_i, self.var_j, self.parents)) > self.independence_threshold
     
     @property
     def has_minimality(self) -> bool:

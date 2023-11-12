@@ -2,8 +2,6 @@ from matplotlib import pyplot as plt
 import networkx as nx
 from itertools import combinations
 
-from sklearn import neighbors
-
 from ConditionalIndependence import ConditionalIndependence as ci
 from edge import Edge
 
@@ -34,16 +32,13 @@ class PCStable:
     
     def getMarkovChains(self) -> list[list[str]]:
         return self.markovChains    
-        
-    # def get_graph_nodes(self) -> list[str]:
-    #     return list(self.graph.nodes())
 
     def getGraphEdges(self) -> list[str]:
         for edge in self.graph.edges():
             Edge(edge[0], edge[1], [], self.ci, [], threshold=self.independence_threshold)
         return list(self.graph.edges())
     
-    def drawPlot(self):
+    def drawPlot(self) -> None:
         nx.draw_shell(self.graph, with_labels=True)
         plt.show()
 
@@ -84,28 +79,33 @@ class PCStable:
     #     # iterations += 1          
     
     def getting_connected_nodes_for_path_length(self, connections = 1):
-        if connections == 0:
-            raise ValueError("Connections must have a value larger than 1")
-        output = []
-        nodes = list(self.all_nodes)
-        for v_i in nodes:
-            v_i = nodes.pop(0)
-            for v_j in nodes:
-                if v_j == v_i: continue
-                paths = list(nx.all_simple_edge_paths(self.graph, source = v_i, target = v_j, cutoff=connections))
-                for path in paths:
-                    if len(path)-1 == connections:
-                        parents = set(node for edge in path for node in edge if node not in [v_i, v_j])
-                        output.append([v_i, v_j ,parents])
-        return output
-    
-    def getting_connected_nodes_for_path_length_new(self, connections = 0):
-        # connections = path_cutoff or 1
         output = []
         nodes = list(self.all_nodes)
         
         for v_i in nodes:
-            # v_i = nodes.pop(0)
+            for v_j in nodes:
+                if v_j == v_i: continue
+                if connections == 0:
+                    output.append([v_i, v_j ,[]])
+                    continue
+                
+                cutoff = connections + 1
+                paths = list(nx.all_simple_edge_paths(self.graph, source = v_i, target = v_j, cutoff=cutoff))
+                for path in paths:
+                    if len(path) != cutoff: continue
+                    # print(f'v_i = {v_i}, v_j = {v_j}, path = {path}, connections = {connections}')
+                    parents = list(set(node for edge in path for node in edge if node not in [v_i, v_j]))
+                    # print(f'parents: {parents}, connections: {connections}, valid: {len(parents) == connections}')
+                    if len(parents) != connections: continue
+                    output.append([v_i, v_j ,parents])
+
+        return output
+    
+    def getting_connected_nodes_for_path_length_new(self, connections = 0):
+        output = []
+        nodes = list(self.all_nodes)
+        
+        for v_i in nodes:
             for v_j in nodes:
                 if v_j == v_i: continue
                 if connections == 0:
@@ -153,48 +153,13 @@ class PCStable:
         neighbors = list(self.graph.neighbors(node))
         parents_combinations = set(combinations(neighbors, connections))
         return [list(combo) for combo in parents_combinations]
-
-
-        
-        # Magic sauce
-        
-        # set(list(combinations(adjacent_nodes_list[0][1].keys(), 2)))
-        # for adjacent_nodes in adjacent_nodes_list:
-        #     for node in adjacent_nodes[1].keys():
-        #         continue
-        #         # adjacent_nodes_output[adjacent_nodes[0]] = f
-        #         # 1. find node in adjacent_nodes_list 
-        #         # 2. create a pair but if on iteration 3, do it again (recursively)
-        return adjacent_nodes_list
         
     def identifySkeleton(self, with_subplots = False, iterations = 3):
-    #     '''
-    #     get's the core skeleton shape given the independence conditions
-    #     '''
-    #     #TODO: i think iterations should not really apply and should auto reach a skelton
-    #     # Part 1: get all the edges with no parents
-    #     edges = self.initialise_edges()
-
-    #     # Part 2: get the skeleton graph - I still don't trust
-    #     for i in range(iterations):
-    #         self.independence_test(i)
-    #         if with_subplots: self.subplot(i+2)
-    #     plt.show()
+        #TODO: move runPCA to here
         raise NotImplementedError
-      
-        
-    def subplot(self, subplot = 1):
-        plt.subplot(2,2,subplot)
-        nx.draw_spring(self.graph, with_labels=True)
         
     def draw(self):
-        plt.show()
-        
-        
-    
-    @staticmethod
-    def listNodeParents(edges):
-        return [[edge.var_i, edge.var_j, edge.parents] for edge in edges]
+        plt.show()   
             
     def identifyImmoralities(self):
         '''
@@ -250,7 +215,7 @@ class PCStable:
         except:
             paths = []
         return paths
-    
+
     @staticmethod
     def getAllPathsWithoutConditionalNode(Graph: nx.Graph | nx.DiGraph, node_1: str, node_2: str, cond_node: str, method = 'dijkstra') -> list[tuple[str, ...]]:
         all_shortest_paths = PCStable.getAllPathsBetweenNodes(Graph, node_1, node_2, method)
@@ -272,6 +237,9 @@ class PCStable:
         '''
         raise NotImplementedError    
     
+    @staticmethod
+    def listNodeParents(edges):
+        return [[edge.var_i, edge.var_j, edge.parents] for edge in edges]
        
 ###################################################
 ################## OTHER ##########################

@@ -23,7 +23,6 @@ def main():
         print(f'\n--iteration {iterations}--')
         sever = False
         connected_nodes = pcs_test.getting_connected_nodes_for_path_length(iterations)
-        # adjacent nodes
         testing_nodes = pcs_test.getting_nodes_parent_sets_for_independence_testing(iterations)
 
         # for connected in connected_nodes: print(connected)
