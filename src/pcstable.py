@@ -17,6 +17,10 @@ class PCStable:
         self.markovChains = []
         self.independence_threshold = independence_threshold
         self.all_nodes = self.graph.nodes()
+        self.severed_edges = []
+        self.immoral_nodes = []
+        self.non_immoral_nodes = []
+        # self.markovChains = []
         
         print(f'Using conditional test: {method}')
         print(f'Test threshold: {independence_threshold}')
@@ -33,16 +37,77 @@ class PCStable:
     def getMarkovChains(self) -> list[list[str]]:
         return self.markovChains    
 
-    def getGraphEdges(self) -> list[str]:
-        for edge in self.graph.edges():
-            Edge(edge[0], edge[1], [], self.ci, [], threshold=self.independence_threshold)
-        return list(self.graph.edges())
+    def evaluate_immoralities(self):
+        '''
+        Evaluates immoral nodes to introduce initial orientation to graph
+        TODO: do i need to iterate?
+        
+        '''
+        moral_nodes = []
+        immoral_nodes = []
+        
+        evaluation_set = []
+        for parent in self.all_nodes:
+            child_pairs = self.all_adjacent_nodes(parent, 2) 
+            for pair in child_pairs:
+                evaluation_set.append([pair[0], pair[1], parent])
+        
+        for eval in evaluation_set:
+            moral_nodes.append(eval)
+            for severed in self.get_severed_edges_list:
+                # checking if child nodes to check are in a severed edge 
+                if eval[0] in severed[:2] and eval[1] in severed[:2]:
+                    # checking the parent nodes in severed edges
+                    if eval[2] not in severed[2]:
+                        immoral_nodes.append(eval)
+                        moral_nodes.remove(eval)
+                        break
+                
+        for node  in immoral_nodes:
+            self.immoral_nodes.append(Edge(node[0],node[1],node[2],self.ci))
+            # directional=True))
+        for node in moral_nodes:
+            self.non_immoral_nodes.append(Edge(node[0],node[1],node[2],self.ci))
+                                            #    , directional=False))
     
-    def drawPlot(self) -> None:
-        nx.draw_shell(self.graph, with_labels=True)
-        plt.show()
-
-    def create_valid_path_set(self, paths) -> list[Edge]:
+    def create_directional_edge_using_immorality(self):
+        # all_graph_edges = self.pcs_test()
+        # single_parent_severed_edges = self.get_single_parent_severed_edges
+        # immoral_nodes = self.immoral_nodes
+        dir_edges =[]
+        
+        DiG = nx.MultiDiGraph()
+        
+        for node in self.immoral_nodes:
+            dir_edges.append([
+                tuple([node.var_i, node.parents[0]]),
+                tuple([node.parents[0], node.var_j])
+            ])
+        
+        DiG.add_edges_from(dir_edges, directed=True)
+        
+        for node in self.non_immoral_nodes:
+            dir_edges.append([
+                tuple([node.var_i, node.parents[0]]),
+                tuple([node.parents[0], node.var_j])
+            ])
+            
+        DiG.add_edges_from(dir_edges, directed=False)
+        
+        nx.draw_shell(DiG, with_labels=True)
+        plt.show() 
+        
+                    
+        
+        # DiGraph = nx
+        
+        
+        # immporal edges 
+        
+        
+        raise NotImplemented
+        
+    def create_edges(self, paths) -> list[Edge]:
         '''
         create edge<[vi,vj, [list[parents]]> structure so long as edge is not 
         contained in the parents 
@@ -56,27 +121,7 @@ class PCStable:
                 raise ValueError('v_i or v_j values should not be in parent list')
             
             edges.append(Edge(v_i, v_j, parents, conditional_independence_test=self.ci, threshold = self.independence_threshold))
-        return edges
-    
-    # def independence_test(self):
-    #     # TODO: SOME_CONDITION while the independence test continues to keep running
-        
-    #     # parent_combinations = list(combinations(self.get_graph_nodes(), iterations))
-    #     # all_edges = list(combinations(self.get_graph_nodes(), 2))
-        
-    #     for conditionals in parent_combinations:
-    #         conditionals = list(conditionals)
-    #         # conditionals = self.all_adjacent_nodes         
-    #         # self.all_paths_nodes(3)     
-
-    #         # edges_set_2 = self.initialise_edges(conditionals)
-    #         # print(self.listNodeParents(edges_set_2))
-    #         for edge in edges_set_2:
-    #             if edge.is_conditionally_independent:
-    #                 self.graph.remove_edge(edge.var_i, edge.var_j)
-    #             # if iterations > 0 and edge.is_immoral:
-    #             #     self.addImmorality(conditionals, [edge.var_i, edge.var_j]) 
-    #     # iterations += 1          
+        return edges        
     
     def getting_connected_nodes_for_path_length(self, connections = 1):
         output = []
@@ -122,15 +167,17 @@ class PCStable:
 
         return output
     
-    def all_paths_nodes(self, connections):# -> list[list[str]]:
+    def all_paths_nodes(self, connections) -> None:
         all_edges = list(combinations(self.all_nodes(), 2))
         parent_nodes = []
         for edge in all_edges:
             parent_nodes = list(nx.all_simple_edge_paths(self.graph, source = edge[0], target = edge[1], cutoff=connections))
         print(parent_nodes)
     
-    def getting_nodes_parent_sets_for_independence_testing(self, connections = 0):
-        # connections = path_cutoff or 1
+    def get_combinations_of_adjacent_nodes(self, connections = 0) -> list[list[str|list[str]]]:
+        '''
+        returns a list of all the 'connection' adjacent node combinations for all nodes in the graph
+        '''
         output = []
         nodes = list(self.all_nodes)
         
@@ -148,16 +195,27 @@ class PCStable:
                     output.append([v_i, v_j, set])
         return output
     
-    def all_adjacent_nodes(self, node, connections):# -> list[list[str]]:        
-        # for node in self.all_nodes:
+    def all_adjacent_nodes(self, node, connections) -> list[list[str]]:
+        '''
+        returns a list of all 'connection' adjacent node combinations for a given node 
+        '''  
         neighbors = list(self.graph.neighbors(node))
         parents_combinations = set(combinations(neighbors, connections))
         return [list(combo) for combo in parents_combinations]
         
-    def identifySkeleton(self, with_subplots = False, iterations = 3):
-        #TODO: move runPCA to here
-        raise NotImplementedError
-        
+    def remove_edges(self, edges: list[Edge], log_removals = True) -> list[Edge]:        
+        removed_edges = []
+        for edge in edges:
+                if self.graph.has_edge(edge.var_i,edge.var_j):
+                    self.graph.remove_edge(edge.var_i, edge.var_j)
+                    
+                    #update class variable and return array
+                    removed_edges.append(edge)
+                    self.severed_edges.append(edge)
+                    print(f'Severed: {edge.var_i} {edge.var_j} | {edge.parents} || p = {edge.test_value}')
+
+        return removed_edges
+    
     def draw(self):
         plt.show()   
             
@@ -235,43 +293,33 @@ class PCStable:
         1 check if 2 graphs have the same immoralities
         2 check if the graphs have the same skeleton (v-structures)
         '''
-        raise NotImplementedError    
     
-    @staticmethod
-    def listNodeParents(edges):
-        return [[edge.var_i, edge.var_j, edge.parents] for edge in edges]
-       
-###################################################
-################## OTHER ##########################
-###################################################
-
-# def buildingPCStable():
-#     TG = nx.DiGraph()
-#     node_list = ['A', 'B', 'C', 'D', 'E']
-#     edge_list = [('A','C'), ('B','C'), ('C','D'), ('C','E')]
+    @property
+    def get_single_parent_severed_edges_list(self) -> list[Edge]:
+        if len(self.severed_edges) == 0:
+            return []
+        single_parent_severed_edges = []
+        for severed_edge in self.severed_edges:
+            if severed_edge.has_one_parent: single_parent_severed_edges.append(severed_edge.as_list)
+        return single_parent_severed_edges
     
-#     TG.add_edges_from(edge_list)
+    @property
+    def get_severed_edges_list(self) -> list[str|list[str]]:
+        if len(self.severed_edges) == 0:
+            return []
+        severed_edges_list = []
+        for severed_edge in self.severed_edges:
+            severed_edges_list.append(severed_edge.as_list)
+        return severed_edges_list
     
-#     G = nx.Graph()
-#     G = utils.fully_connected_graph(node_list)
-    
-#     plt.subplot(2,2,1)
-#     nx.draw_spring(TG, with_labels=True)
-    
-#     plt.subplot(2,2,2)
-#     nx.draw_spring(G, with_labels=True)
-    
-#     severed_edges = utils.removeConnectionsWithNoDirectionalPaths(G, TG)
-#     print(severed_edges)
-    
-#     plt.subplot(2,2,3)
-#     nx.draw_spring(G, with_labels=True)
+    @property
+    def get_graph_edges(self) -> list[str]:
+        # for edge in self.graph.edges():
+        #     Edge(edge[0], edge[1], [], self.ci, [], threshold=self.independence_threshold)
+        return list(self.graph.edges())
     
     
-#     plt.show()
-    
-    
-if __name__ == '__main__':
+# if __name__ == '__main__':
 
     # PCStable = PCStable('data/lung_cancer-train.csv')
     pcs = PCStable('data/lung_cancer-train.csv')

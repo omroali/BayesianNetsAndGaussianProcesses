@@ -9,6 +9,7 @@ class Edge:
             conditional_independence_test: ci, 
             remaining_nodes: list[str] = [],
             threshold: float = 0.01,
+            # *directional: bool
         ):
         self.var_i = var_i
         self.var_j = var_j 
@@ -16,6 +17,8 @@ class Edge:
         self.remaining_nodes = []
         self.conditional_independence_test = conditional_independence_test
         self.independence_threshold = threshold
+        self.test_value = None
+        # self.directional = False if not directional else directional # implies direction from Vi to Vj if true
         
     ###################################################
     ################ CLASS METHODS ####################
@@ -39,6 +42,13 @@ class Edge:
         return len(self.parents) > 1
     
     @property
+    def has_one_parent(self) -> bool:
+        '''
+        Check if the edge has more than one parent
+        '''
+        return len(self.parents) == 1
+    
+    @property
     def is_parentless(self) -> bool:
         '''
         Check if the edge has more than one parent
@@ -54,16 +64,13 @@ class Edge:
         return self.is_conditionally_independent and self.has_minimality and self.has_faithfulness
         
     @property
-    def is_conditionally_independent(self):# -> bool:
+    def is_conditionally_independent(self) -> bool:
         '''
         Vi - P[] - Vj
         condition V1 independent of V2 given P[]
         '''
-        test = float(self.conditional_independence_test.compute_pvalue(self.var_i, self.var_j, self.parents))
-        # if test > self.independence_threshold:
-            # print(f'X2test: Vi={self.var_i}, Vj={self.var_j}, pa_i={self.parents}, p={test}')
-        return test  > self.independence_threshold, test
-        # float(self.conditional_independence_test.compute_pvalue(self.var_i, self.var_j, self.parents)) > self.independence_threshold
+        self.test_value = float(self.conditional_independence_test.compute_pvalue(self.var_i, self.var_j, self.parents))
+        return self.test_value  > self.independence_threshold
     
     @property
     def has_minimality(self) -> bool:
@@ -99,6 +106,11 @@ class Edge:
         cond_2 = self.is_dependent(self.var_i, self.var_j, self.parents)
         
         return cond_1 and cond_2
+    
+    @property
+    def as_list(self) -> list[str|list[str]]:
+        return [self.var_i, self.var_j, self.parents]
+        
             
     # @property
     # def is_chain(self) -> bool:
