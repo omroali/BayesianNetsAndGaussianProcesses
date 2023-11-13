@@ -13,8 +13,6 @@ class PCStable:
         self.ci = ci(data_path, method)
         self.variables = self.ci.rand_vars
         self.graph = PCStable.fully_connected_graph(self.variables, self.graph)
-        self.immoralNodes = []
-        self.markovChains = []
         self.independence_threshold = independence_threshold
         self.all_nodes = self.graph.nodes()
         self.severed_edges = []
@@ -36,6 +34,39 @@ class PCStable:
     
     def getMarkovChains(self) -> list[list[str]]:
         return self.markovChains    
+    
+    def evaluate_skeleton(self, with_plots = False, log_level=0):
+        '''
+        Method to get the basic skeleton structure algorithm
+        '''
+        severless_count = 0
+        iteration = 0
+        log_removals = False
+        if log_level == 2: log_removals = True
+
+        
+        while (severless_count < 5):
+            severed = False
+            
+            if log_level >= 1: print(f'\n--iteration {iteration}--')
+            edge_parents_list_for_independence_test = self.get_combinations_of_adjacent_nodes(iteration)
+            edges = self.create_edges(edge_parents_list_for_independence_test)
+            
+            edges_to_remove = []
+            for edge in edges:
+                if edge.is_conditionally_independent:
+                    edges_to_remove.append(edge)
+                    severed = True
+                    severless_count = 0
+        
+            removed_edges = self.remove_edges(edges_to_remove, log_removals)
+            
+            # iteration check and logging
+            if len(removed_edges) == 0: 
+                severless_count += 1                 
+            iteration += 1
+            
+        if with_plots: self.draw_plot()
 
     def evaluate_immoralities(self):
         '''
@@ -153,10 +184,9 @@ class PCStable:
         for v_i in nodes:
             for v_j in nodes:
                 if v_j == v_i: continue
-                if connections == 0:
+                if not connections:
                     output.append([v_i, v_j ,[]])
                     continue
-                
                 for node in nodes:
                     paths = list(nx.all_simple_edge_paths(self.graph, source = v_i, target = node, cutoff=connections))
                     for path in paths:
@@ -164,7 +194,6 @@ class PCStable:
                         parents = list(set(node for edge in path for node in edge if node not in [v_i, v_j]))
                         if len(parents) != connections: continue
                         output.append([v_i, v_j ,parents])
-
         return output
     
     def all_paths_nodes(self, connections) -> None:
@@ -188,7 +217,6 @@ class PCStable:
                     output.append([v_i, v_j ,[]])
                     continue
                 
-                # for node in nodes:
                 adjacent_sets = self.all_adjacent_nodes(v_i, connections)
                 for set in adjacent_sets:
                     if v_i in set or v_j in set: continue
@@ -217,20 +245,18 @@ class PCStable:
         return removed_edges
     
     def draw(self):
-        plt.show()   
-            
-    def identifyImmoralities(self):
-        '''
-        get's the immoralities given the independence conditions and the edge orientations
-        '''
-        raise NotImplementedError
+        plt.show()  
     
+    def draw_plot(self) -> None:
+        nx.draw_shell(self.graph, with_labels=True)
+        plt.show() 
+            
     def identifyQualifyingEdges(self):
         '''
         get's the edges that qualify for orientation given the collider (immoral) nodes
         '''
         raise NotImplementedError
-    
+
     ###################################################
     ############### STATIC METHODS ####################
     ###################################################
@@ -247,12 +273,6 @@ class PCStable:
         # setting up the graphs
         G.add_nodes_from(nodes)
         G.add_edges_from(edges)
-        return G
-    
-    @staticmethod
-    def removeEdge(G: nx.Graph | nx.DiGraph, edge: list[str]) -> nx.Graph | nx.DiGraph:
-        '''very redundant method'''
-        G.remove_edge(edge[0], edge[1])
         return G
     
     @staticmethod
@@ -279,13 +299,6 @@ class PCStable:
         all_shortest_paths = PCStable.getAllPathsBetweenNodes(Graph, node_1, node_2, method)
         paths = [path for path in all_shortest_paths if cond_node not in path]
         return paths
-
-    @staticmethod
-    def getSkeleton():
-        '''
-        gives us the structure of the graph
-        '''
-        raise NotImplementedError
     
     @staticmethod
     def isMarkovEquivalent():
@@ -293,6 +306,11 @@ class PCStable:
         1 check if 2 graphs have the same immoralities
         2 check if the graphs have the same skeleton (v-structures)
         '''
+        raise NotImplementedError
+
+    ###################################################
+    ################# PROPERTIES ######################
+    ###################################################
     
     @property
     def get_single_parent_severed_edges_list(self) -> list[Edge]:
@@ -322,8 +340,8 @@ class PCStable:
 # if __name__ == '__main__':
 
     # PCStable = PCStable('data/lung_cancer-train.csv')
-    pcs = PCStable('data/lung_cancer-train.csv')
-    pcs.identifySkeleton()
+    # pcs = PCStable('data/lung_cancer-train.csv')
+    # pcs.get_skeleton()
     # Step 0: setup a completely undirected graph
     # self.graph
     
