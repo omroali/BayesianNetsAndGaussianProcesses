@@ -1,7 +1,5 @@
-from calendar import c
-from doctest import debug
-from logging import critical
-from turtle import st
+from platform import node
+from typing import final
 import numpy as np
 import csv
 
@@ -15,15 +13,6 @@ from matplotlib import pyplot as plt
 import networkx as nx
 from itertools import combinations
 
-# setting logging levels
-log_level = int(5)
-debug = int(5)
-info = int(4)
-warning = int(3)
-error = int(2)
-critical = int(1)
-
-
 def readCsv(filePath, *training: str):
     '''
     @param filePath is the path to the csv file
@@ -35,6 +24,7 @@ def readCsv(filePath, *training: str):
     # header_data = list(read_data.columns)
     response_data = {}
     headers = {}
+    header_data = []
     
     
     if training:
@@ -430,17 +420,17 @@ for more independence tests, check the city.py file as it contains many tests
 '''
 
 ########### Discrete Tests ###########
-def ChiIndependenceTest(train_data_path, test_args = 'I(Smoking,Coughing|Lung_cancer)'):
+def ChiIndependenceTest(train_data_path = '../data/cardiovascular_data-discretized-train.csv', test_args = 'I(weight,gluc|target)'):
     ci = ConditionalIndependence(train_data_path, 'chisq')
     Vi, Vj, parents_i = ci.parse_test_args(test_args)
-    ci.compute_pvalue(Vi, Vj, parents_i)
-    return 0
+    p = ci.compute_pvalue(Vi, Vj, parents_i)
+    return p
     
-def GsqIndependenceTest(train_data_path, test_args = 'I(Smoking,Coughing|Lung_cancer)'):
+def GsqIndependenceTest(train_data_path = '../data/cardiovascular_data-discretized-train.csv', test_args = 'I(weight,gluc|target)'):
     ci = ConditionalIndependence(train_data_path, 'gsq')
-    Vi, Vj, parents_i = ci.parse_test_args(test_args)
-    ci.compute_pvalue(Vi, Vj, parents_i)
-    return 0 
+    Vi, Vj, parents = ci.parse_test_args(test_args)
+    p = ci.compute_pvalue(Vi, Vj, parents)
+    return p
 
 ########### Continuous Tests ###########
 def fisherzIndependenceTest(train_data_path, test_args = 'I(Smoking,Coughing|Lung_cancer)'):
@@ -452,59 +442,41 @@ def fisherzIndependenceTest(train_data_path, test_args = 'I(Smoking,Coughing|Lun
 
 #########################################
 ## PC Algorithm for Structure Learning ##
-#########################################    
-def fullyConnectedGraph(nodes: list[str], G = nx.Graph()):
-    # using the combinations method from itertools to create all possible edges
-    edges = combinations(nodes, 2)
-    
-    # setting up the graphs
-    G.add_nodes_from(nodes)
-    G.add_edges_from(edges)
-    
-    return G
-    
-def removeEdge(G, edge: list[str]):
-    G.remove_edge(edge[0], edge[1])
-    return G
+#########################################  
 
-def immortalityTest(parentNodes: list[str], conditioningNode: str, TrueGraph: nx.DiGraph):
-    immoralEdgeCheck = [(parent, conditioningNode) for parent in parentNodes]
-    TrueGraphEdges = TrueGraph.edges()
-    for edge in immoralEdgeCheck:
-        if edge not in TrueGraphEdges:
-            return False
-    return True
-    
-def independenceNoCondition(G: nx.Graph, TrueGraph: nx.DiGraph) -> tuple[nx.Graph, list[str]]:
+#
+
+def ConditionNodes(G: nx.Graph, TrueGraph: nx.DiGraph) -> tuple[nx.Graph, list[str]]:
     edges = list(G.edges())
     nodes = list(G.nodes())
     conditioning_nodes = []
     
     for edge in edges:
         for node in nodes:
-            if immortalityTest(edge, node, TrueGraph):
+            if immortalityTest(TrueGraph, edge, node):
                 conditioning_nodes.append(node)
                 logging('EDGE REMOVAL', f'removing edge {edge} as it is immoral of {node}')
                 removeEdge(G, edge)
     return G, conditioning_nodes
 
-def independenceTest(edge, conditional_node, TrueGraph: nx.DiGraph) -> bool:
-    ''' 
-    should check if there are any other paths that can be taken 
-    from a given node to another node in the graph
-    '''
-    all_shortest_paths = []
-    
-    # get all paths
-    if nx.has_path(TrueGraph, edge[0], edge[1]):
-        all_shortest_paths = getAllPathsWithoutConditionalNode(TrueGraph, edge[0], edge[1], conditional_node)
-        logging('SHORTEST PATHS',f'node 1: {edge[0]} - node 2: {edge[1]} - conditional_node: {conditional_node} - paths around conditional node: {list(all_shortest_paths)}')
-    if len(all_shortest_paths) == 0:
-        return True
-    if len(all_shortest_paths) == 1 and edge in all_shortest_paths:
-        return True
-    return False
 
+def logging(info:str, message):
+    types = [
+        'GRAPH NOTICE', 
+        'CHECKING', 
+        'IMMORAILITY TEST', 
+        'IMMORALITY DETECTED', 
+        # 'EDGE REMOVAL'
+        # 'SHORTEST NODE PATHS', 
+    ]
+    
+    if info in types:
+        return False
+    
+    return print(f'{info}: {message}')
+
+
+#######Validation stuff 
 # def validate_path_evaluation(func):
 #     def validate(Graph: nx.Graph | nx.DiGraph, node_1: str, node_2: str, *cond_node: str, method = 'dijkstra'):
 #         if node_1 not in Graph.nodes() or node_2 not in Graph.nodes():
@@ -516,31 +488,3 @@ def independenceTest(edge, conditional_node, TrueGraph: nx.DiGraph) -> bool:
 #             raise ValueError("method must be 'dijkstra' or 'bellman-ford'")
 #         return func(Graph, node_1, node_2, method)
 #     return validate
-
-# @validate_path_evaluation
-def getAllPathsWithoutConditionalNode(Graph: nx.Graph | nx.DiGraph, node_1: str, node_2: str, cond_node: str, method = 'dijkstra') -> list[tuple[str, ...]]:
-    all_shortest_paths = getAllPathsBetweenNodes(Graph, node_1, node_2, method)
-    paths = [path for path in all_shortest_paths if cond_node not in path]
-    return paths
-
-# @validate_path_evaluation
-def getAllPathsBetweenNodes(Graph: nx.Graph | nx.DiGraph, node_1: str, node_2: str, method = 'dijkstra') -> list[tuple[str, ...]]:
-    paths = [tuple(path) for path in list(nx.all_shortest_paths(Graph, node_1, node_2, method=method))]
-    return paths
-
-def independenceOnCondition(G: nx.Graph, TrueGraph: nx.DiGraph, conditioningSet: list[str]) -> nx.Graph:
-    for conditional_node in conditioningSet:
-        # get all pairs of variables that are not connected to the conditioning node
-        edges = [edge for edge in list(G.edges()) if conditional_node not in edge]
-        
-        # identify the pairs that are independant (in the true graph) and remove them
-        for edge in edges:
-            nodes_are_independant = independenceTest(edge, conditional_node, TrueGraph)
-            if nodes_are_independant:
-                logging('EDGE REMOVAL',f'removing {edge} as it is independant of {conditional_node}')
-                removeEdge(G, edge)
-    return G
-
-
-def logging(info:str, message):
-    print(f'{info}: {message}')
