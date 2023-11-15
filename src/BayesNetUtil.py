@@ -58,7 +58,7 @@ def get_probability_given_parents(V, v, evidence, bn):
     probability = 0
 
     if parents is None and is_gaussian == False:
-        cpt = bn["CPT("+V+")"]
+        cpt = bn["CPT("+V+")"]        
         probability = cpt[v]
 
     elif parents is not None and is_gaussian == False:
@@ -165,7 +165,7 @@ def has_cycles(edges):
 
     if cycles is False:
         print("No cycles found!")
-    return cycles
+    return G, cycles
 
 # returns the probability density of the given arguments
 def get_gaussian_density(x, mean, stdev):

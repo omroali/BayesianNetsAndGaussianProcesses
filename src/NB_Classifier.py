@@ -9,6 +9,7 @@
 # Version: 1.0, Date: 03 October 2022
 # Version: 1.1, Date: 03 October 2023 more compatible with CPT_Generator
 # Version: 1.2, Date: 08 October 2023 more compatible with ModelEvaluator
+# Version: 1.2, Date: 10 November 2023 by Omar Ali for assignment convenience
 # Contact: hcuayahuitl@lincoln.ac.uk
 #############################################################################
 
@@ -18,17 +19,17 @@ import time
 
 
 class NB_Classifier:
-    rand_vars = []
-    rv_key_values = {}
-    rv_all_values = []
-    predictor_variable = None
-    num_data_instances = 0
-    default_missing_count = 0.000001
-    probabilities = {}
-    predictions = []
-    log_probabilities = False
 
     def __init__(self, file_name, fitted_model=None):
+        self.rand_vars = []
+        self.rv_key_values = {}
+        self.rv_all_values = []
+        self.predictor_variable = None
+        self.num_data_instances = 0
+        self.default_missing_count = 0.000001
+        self.probabilities = {}
+        self.predictions = []
+        self.log_probabilities = False
         if file_name is None:
             return
         else:
@@ -206,9 +207,9 @@ class NB_Classifier:
 
             normalised_dist = self.get_normalised_distribution(distribution)
             self.predictions.append(normalised_dist)
-            print("UNNORMALISED DISTRIBUTION=%s" % (distribution))
-            print("NORMALISED DISTRIBUTION=%s" % (normalised_dist))
-            print("---")
+            # print("UNNORMALISED DISTRIBUTION=%s" % (distribution))
+            # print("NORMALISED DISTRIBUTION=%s" % (normalised_dist))
+            # print("---")
 
     def get_normalised_distribution(self, distribution):
         normalised_dist = {}
@@ -223,6 +224,28 @@ class NB_Classifier:
             normalised_dist[var_val] = normalised_prob
 
         return normalised_dist
+    
+    
+    # def get_str(data):
+    #     """
+    #     evaluting all combinations of random vaiables for Naive Bayes
+    #     """
+    #     # reading data
+    #     type, random_variables, result, input_data, output_data = data
+
+    #     # step1 get all    
+    #     marProb = calculateMarginalProbabilities(data)
+    #     print(marProb[result])
+
+
+    #     # step 2: get all possible conditional probabilities assuming all are independant
+    #     condProb = allConditionalProbabilities(data)
+
+    #     structure = condProb.copy()
+    #     structure[result] = marProb[result]
+    #     return structure
+    
+    
 
 
 if __name__ == "__main__":

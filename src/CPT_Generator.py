@@ -195,7 +195,6 @@ class CPT_Generator(BayesNetReader, NB_Classifier):
         rand_vars = str(rand_vars).replace('[', '').replace(']', '')
         rand_vars = str(rand_vars).replace('\'', '').replace(', ', ';')
 
-        structure = self.bn.bn["structure"]
         structure = str(structure).replace('[', '').replace(']', '')
         structure = str(structure).replace('\'', '').replace(', ', ';')
 

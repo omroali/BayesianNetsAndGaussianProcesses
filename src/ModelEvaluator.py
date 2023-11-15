@@ -41,7 +41,7 @@ from BayesNetInference import BayesNetInference
 
 
 class ModelEvaluator(BayesNetInference):
-    verbose = False 
+    verbose = True
     useBayesNet = True # False uses NaiveBayes, True uses BayesNet
     inference_time = None
 

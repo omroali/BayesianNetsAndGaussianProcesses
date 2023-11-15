@@ -121,6 +121,20 @@ class BayesNetInference(BayesNetReader):
 
             return sum
 
+
+    def elimination_ask(self, evidence):
+        if self.verbose: print("\nSTARTING Inference by Elimination... an exact inference algorithm")
+        
+        # bayesian network specifying joint distributions P(X1,...,Xn)
+
+        # factors = []
+        
+        # for var in ORDERED -> self.bn["random_variables"]:
+        #   factors.append(make_factor(var, evidence)) 
+        #   if var is hidden: sum_out(var, factors)
+        # return pointwise_product(factors).normalise()
+        raise NotImplementedError
+    
     # main method to carry out approximate probabilistic inference,
 	# which invokes prior_sample() and is_compatible_with_evidence()
     def rejection_sampling(self, num_samples):
