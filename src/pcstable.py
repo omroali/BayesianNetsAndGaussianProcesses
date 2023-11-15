@@ -1,9 +1,11 @@
 from matplotlib import pyplot as plt
 import networkx as nx
 from itertools import combinations
+import random
 
 from ConditionalIndependence import ConditionalIndependence as ci
 from edge import Edge
+import BayesNetUtil as bnu
 
 class PCStable:
     graph = nx.Graph()
@@ -18,23 +20,18 @@ class PCStable:
         self.severed_edges = []
         self.immoral_nodes = []
         self.non_immoral_nodes = []
+        self.directional_graph = []
         # self.markovChains = []
         
         print(f'Using conditional test: {method}')
         print(f'Test threshold: {independence_threshold}')
                 
     def addImmorality(self, node: str | list[str], edge: list[str]) -> None:
-        self.immoralNodes.append([node, edge])
+        self.immoral_nodes.append([node, edge])
         
     def getImmoralities(self) -> list[list[str]]:
-        return self.immoralNodes
-    
-    def addMarkovChain(self, vi: str, vj: str, parents: list[str]) -> None:
-        self.markovChains.append([vi, vj, parents])
-    
-    def getMarkovChains(self) -> list[list[str]]:
-        return self.markovChains    
-    
+        return self.immoral_nodes
+
     def evaluate_skeleton(self, with_plots = False, log_level=0):
         '''
         Method to get the basic skeleton structure algorithm
@@ -44,8 +41,7 @@ class PCStable:
         log_removals = False
         if log_level == 2: log_removals = True
 
-        
-        while (severless_count < 5):
+        while (severless_count < 10):
             severed = False
             
             if log_level >= 1: print(f'\n--iteration {iteration}--')
@@ -107,23 +103,32 @@ class PCStable:
         # immoral_nodes = self.immoral_nodes
         dir_edges =[]
         
-        DiG = nx.MultiDiGraph()
+        DiG = nx.DiGraph()
         
         for node in self.immoral_nodes:
             dir_edges.append([
-                tuple([node.var_i, node.parents[0]]),
-                tuple([node.parents[0], node.var_j])
+                tuple([node.var_i, node.parents]),
+                tuple([node.parents, node.var_j])
             ])
         
-        DiG.add_edges_from(dir_edges, directed=True)
+        for edges in dir_edges:
+            DiG.add_edges_from(edges, directed=True)
+            print(edges)
         
+        un_dir_edges = []
         for node in self.non_immoral_nodes:
-            dir_edges.append([
-                tuple([node.var_i, node.parents[0]]),
-                tuple([node.parents[0], node.var_j])
+            un_dir_edges.append([
+                tuple([node.var_i, node.parents]),
+                tuple([node.parents, node.var_j])
             ])
             
-        DiG.add_edges_from(dir_edges, directed=False)
+        for edges in un_dir_edges:
+            DiG.add_edges_from(edges, directed=False)
+        # DiG.add_edges_from(dir_edges, directed=False)
+        
+        for node in self.graph.nodes():
+            if node not in DiG.nodes():
+                DiG.add_node(node)
         
         nx.draw_shell(DiG, with_labels=True)
         plt.show() 
@@ -134,9 +139,36 @@ class PCStable:
         
         
         # immporal edges 
+    
+    @staticmethod   
+    def topological_sort_for_structure(di_graph: nx.DiGraph) -> str:
+        output_struct = []
+        struct_list = [(node,list(di_graph.predecessors(node))) for node in nx.topological_sort(di_graph)]
+        for [node, parents] in struct_list:
+            if len(parents) > 0:
+                output_struct.append(f'P({node}|{",".join(parents)})')
+            else:
+                output_struct.append(f'P({node})')
+        return ';'.join(output_struct)
+                
+    @staticmethod
+    def generate_config_file(structure) -> None:
         
+        with open('config.txt', 'w') as f:
+            f.write(structure)
         
-        raise NotImplemented
+    def randomised_directed_graph(self):
+        attempts = 0
+        while attempts < 100000:
+            rand_dag=nx.DiGraph()
+            for edge in self.graph.edges():
+                edge_vars = [edge[0],edge[1]]
+                random.shuffle(edge_vars)
+                rand_dag.add_edge(edge_vars[0],edge_vars[1])
+            if nx.is_directed_acyclic_graph(rand_dag):
+                return rand_dag
+            attempts += 1
+        raise ValueError(f'Could not create a random DAG after {attempts} attempts')         
         
     def create_edges(self, paths) -> list[Edge]:
         '''
