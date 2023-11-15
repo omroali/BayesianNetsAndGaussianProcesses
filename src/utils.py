@@ -1,38 +1,37 @@
+from datetime import datetime   
 from platform import node
 from typing import final
 import numpy as np
 import csv
 
-from sympy import im
+from sympy import im, topological_sort
 
-from BayesNetInference import BayesNetInference
-from ConditionalIndependence import ConditionalIndependence
+# from BayesNetInference import BayesNetInference
+# from ConditionalIndependence import ConditionalIndependence
 
 # import pandas as pd
 from matplotlib import pyplot as plt
 import networkx as nx
 from itertools import combinations
 
-def readCsv(filePath, *training: str):
+def read_csv(filePath, target: str):
     '''
     @param filePath is the path to the csv file
-    @param training is the random variable to be evaluated
+    @param target is the random variable to be evaluated
     @return a dictionary of the data
     '''
-    read_data = np.genfromtxt(filePath, delimiter=",", dtype="<U11")
-    # read_data = pd.read_csv(filePath)
-    # header_data = list(read_data.columns)
+    read_data = np.genfromtxt(filePath, delimiter=",", dtype="<U32")
     response_data = {}
     headers = {}
     header_data = []
     
     
-    if training:
+    if target:
         header_data = read_data[0]
-        if training not in header_data:
-            return "Must be a random variable in the dataset"
-        [[idx_result]] = np.where(header_data == training)
-
+        if target not in header_data:
+            raise ValueError(f'{target} must be a random variable in the dataset')
+        
+        [[idx_result]] = np.where(header_data == target)
         # // find index of training
         headers["result"] = header_data[idx_result]
         headers["random_variables"] = np.delete(header_data, idx_result)
@@ -45,79 +44,10 @@ def readCsv(filePath, *training: str):
         print("Testing data formatted")
 
     return {
-        "type": "training" if training else "testing",
+        "type": "training" if target else "testing",
         "headers": headers,
         "variables": response_data,
     }
-
-### Consider using dataclass instead for this?
-class BayesianNetworkStructure:
-    def __init__(self, name, structure, rand_vars, cpt_vals=None):
-        # Validation
-        # if (cpt_vals or rand_vars) is None:
-        #     return ValueError(
-        #         "There are no cpt values or\
-        #                     random variables avaiblabe"
-        #     )
-        # if (cpt_vals and rand_vars) is not None:
-        #     return ValueError(
-        #         "Both cpt values and random\
-        #                     variables are populated"
-        #     )
-
-        # Creating the Class structure
-        self.name = name
-        self.structure = np.array(structure, dtype="S")
-        self.rand_vards = self.setRandomVariableStructure()
-
-        if cpt_vals:
-            self.setUpCptStructure()
-
-    #
-    def setUpCptStructure(self):
-        return 0
-
-    def setRandomVariableStructure(self):
-        return 0
-
-
-def readBayesianNetworkStructure(filePath):
-    values = None
-    returnData = {}
-
-    with open(filePath, newline="") as structure_data:
-        struct = csv.reader(structure_data, delimiter=" ", quotechar="|")
-        key = ""
-        values = []
-        # thinking for each row check if there is a ':'
-        # if there is then assume the remaining data in that row belongs to it,
-
-        for row in struct:
-            if len(row) == 0:
-                continue
-
-            rowData = row[0]
-            keyDelim = rowData.find(":")
-
-            if keyDelim != -1:  # ie found a :
-                colonSplitRowData = splitData(rowData, ":")
-                key = colonSplitRowData[0]  # eg it it now structure
-                if len(colonSplitRowData) > 1:
-                    values = colonSplitRowData[1]
-            else:
-                values = rowData
-
-            # if there are no values
-            if values and len(values) == 0:
-                continue
-
-            dataDelim = rowData.find(";")
-            if dataDelim != -1:  # ie found a ;
-                values = splitData(values, ";")
-
-            returnData = processData(returnData, key, values)
-            # print(returnData)
-    return returnData
 
 
 # storing
@@ -152,44 +82,6 @@ def processData(
 
     return returnData
 
-    #                data = rowData[1]  # eg now P(B);P(E);P(A|B,E);P(J|A);P(M|A) dataDelim = data.find(';'); if dataDelim !== -1:  # ie found a ;
-    #                for data.split(':'):
-
-    # figure out what key is (key stays the same until it's changed)
-
-    # for idx, row in enumerate(struct):
-    #     if len(row) == 0:
-    #         continue
-    #
-    #     # splitting data name: Alarm to array ['name', 'Alarm']
-    #     keys = ["name", "random_variables", "structure", "CPT"]
-    #     rowData = row[0].split(":")
-    #
-    #     # print(rowData)
-    #     if rowData[0] == "name":  # TODO: possibly bug if values have key name
-    #         name = rowData[1]
-    #     if rowData[0] == "random_variables":
-    #         random_variables = rowData[1]
-    #     if rowData[0] == "structure":
-    #         structure = rowData[1]
-    #     if idx == 10:
-    #         idx = 32
-    #     print(idx)
-    #
-    # print(name)
-    # print(random_variables)
-    # print(structure)
-
-    # read name
-    # random_variables
-    # structure
-
-    # are there CPTs
-    # CPTs
-
-    # BayesianNetworkStructure(name, structure, rand_vars)
-
-
 def splitData(arrayData, delimitter):
     return list(filter(None, arrayData.split(delimitter)))
 
@@ -206,7 +98,7 @@ def getHeaders(data):
 
 
 def getBasicStructure(filePath):
-    data = readCsv(filePath, True)
+    data = read_csv(filePath, True)
     inputs = data["headers"]["input"]
     output = data["headers"]["output"]
     structure = []
@@ -217,10 +109,10 @@ def getBasicStructure(filePath):
     return structure
 
 
-def readTrainingData(trainingDataPath, training: str):
+def read_training_data(trainingDataPath, training: str):
     if trainingDataPath is None:
         return "training data path or data values must be provided"
-    data = readCsv(trainingDataPath, training)
+    data = read_csv(trainingDataPath, training)
     type, random_variables, result, input_data, output_data = (
         data["type"],
         data["headers"]["random_variables"],
@@ -229,7 +121,6 @@ def readTrainingData(trainingDataPath, training: str):
         data["variables"]["output"],
     )
     return type, random_variables, result, input_data, output_data
-
 
 def calculateMarginalProbabilities(data):
     if data is not None:
@@ -261,7 +152,6 @@ def calculateMarginalProbabilities(data):
 
     return marginal_probability
 
-
 def allConditionalProbabilities(data):
     if data is not None:
         type, random_variables, result, input_data, output_data = data
@@ -270,12 +160,11 @@ def allConditionalProbabilities(data):
 
     conditional_probabilities = {}
     for var in random_variables:
-        conditional_probabilities[var + "|" + result] = calculateConditionalProbability(
-            data, var, result
+        conditional_probabilities[result + "|" + var] = calculateConditionalProbability(
+            data, result, var
         )
 
     return conditional_probabilities
-
 
 def calculateConditionalProbability(data, prior, evidence):
     """
@@ -334,9 +223,9 @@ def getUniqueValues(random_variables, variables_data, variable):
     return idx_rand_vars, unique_values
 
 
-def independantProbabilityStructure(data):
+def independent_probability_structure(data):
     """
-    evaluting all combinations of random vaiables
+    evaluating all combinations of random variables for Naive Bayes
     """
     # reading data
     type, random_variables, result, input_data, output_data = data
@@ -346,17 +235,33 @@ def independantProbabilityStructure(data):
     print(marProb[result])
     
 
-    # step 2: get all possible conditional probabilities assuming all are independant
+    # step 2: get all possible conditional probabilities assuming all are independent
     condProb = allConditionalProbabilities(data)
 
-    structure = condProb.copy()
-    structure[result] = marProb[result]
-    return structure
+    structure_data = condProb.copy()
+    structure_data[result] = marProb[result]
+    
+    edges = []
+    for struct in structure_data:
+        edges.append(tuple(struct.split('|')))
+        
+    graph = nx.DiGraph()
+    edges_list = []
+    node_list = []
+    for edge in edges:
+        if len(edge) == 2: edges_list.append(edge)
+        if len(edge) == 1: node_list.append(edge[0])
+    graph.add_edges_from(edges_list)
+    graph.add_nodes_from(node_list)
+
+    structure_array = topological_sort_for_structure(list(node_list) ,graph)
+
+    return structure_data, structure_array 
 
 
-def formatIntoConfigStructureFile(evalVar, filePath, structureType="independant"):
+def formatIntoConfigStructureFile(evalVar, filePath, structureType="independent"):
     acceptable_struct_types = ['independant']
-    data = readTrainingData(filePath, evalVar)
+    data = read_training_data(filePath, evalVar)
     type, random_variables, result, input_data, output_data = data
     variables = np.append(random_variables, result)
 
@@ -368,8 +273,8 @@ def formatIntoConfigStructureFile(evalVar, filePath, structureType="independant"
     if structureType not in acceptable_struct_types:
         return "structureType must be provided"
         
-    if structureType == "independant":
-        structureData = independantProbabilityStructure(data)
+    if structureType == "independent":
+        structureData = independent_probability_structure(data)
         
     
     newFilePath = "config/config-" + evalVar.lower() + "-created.txt"
@@ -392,24 +297,60 @@ def formatIntoConfigStructureFile(evalVar, filePath, structureType="independant"
     
     return newFilePath
 
+
+
+def config_structure_file(node_structure: dict, file_name: str, unique: str = '') -> str:
+    '''
+    @param: node_structure = {
+            'random_variables':'var1(var1);...;varn(varn)',
+            'structure':'P(var1);P(var1|var2);...;P(varn|varm,varo)'
+        }
+    
+    '''
+    random_variables, structure = node_structure.values()
+    if unique != '': unique = '-' + unique + '-' + datetime.utcnow().strftime("%m-%d_%H:%M:%S")
+    new_file_path = f'config/config-{file_name}{unique}.txt'
+    with open(new_file_path, "w") as file:
+        file.write(f"name:{file_name}")
+        file.write("\n\nrandom_variables:" + random_variables)
+        file.write("\n\nstructure:" + structure)
+    return new_file_path
+
+def topological_sort_for_structure(di_graph: nx.DiGraph):
+    output_struct = []
+    random_variables = []
+
+    struct_list = [(node,list(di_graph.predecessors(node))) for node in nx.topological_sort(di_graph)]
+    for [node, parents] in struct_list:
+        if len(parents) > 0:
+            output_struct.append(f'P({node}|{",".join(parents)})')
+        else:
+            output_struct.append(f'P({node})')
+
+    for node in list(nx.topological_sort(di_graph)):
+        random_variables.append(f'{node}({node})')
+
+    return {'random_variables': ';'.join(random_variables), 'structure': ';'.join(output_struct)}
+
+
 #########################################
 ############### Inference  ##############
 #########################################
-def InferenceByEnumeration():
-    alg_name = 'InferenceByEnumeration'
-    # file_name =
-    # prob_query = 
-    # num_samples = 
-    BayesNetInference(alg_name, file_name, prob_query, num_samples)
-    return 0
+# def InferenceByEnumeration():
+#     alg_name = 'InferenceByEnumeration'
+#     # file_name =
+#     # prob_query = 
+#     # num_samples = 
+#     BayesNetInference(alg_name, file_name, prob_query, num_samples)
+#     return 0
 
-def RejectionSampling():
-    alg_name = 'RejectionSampling'
-    # file_name =
-    # prob_query = 
-    # num_samples = 
-    BayesNetInference(alg_name, file_name, prob_query, num_samples)
-    return 0
+# def RejectionSampling():
+#     alg_name = 'RejectionSampling'
+#     # file_name =
+#     # prob_query = 
+#     # num_samples = 
+#     BayesNetInference(alg_name, file_name, prob_query, num_samples)
+#     return 0
 
 #########################################
 ########## Independece Testing ##########
@@ -437,9 +378,6 @@ def fisherzIndependenceTest(train_data_path, test_args = 'I(Smoking,Coughing|Lun
     # TODO:
     return 0 
 
-
-
-
 #########################################
 ## PC Algorithm for Structure Learning ##
 #########################################  
@@ -460,6 +398,10 @@ def ConditionNodes(G: nx.Graph, TrueGraph: nx.DiGraph) -> tuple[nx.Graph, list[s
     return G, conditioning_nodes
 
 
+#########################################
+############# Other Tools ###############
+#########################################  
+
 def logging(info:str, message):
     types = [
         'GRAPH NOTICE', 
@@ -474,6 +416,23 @@ def logging(info:str, message):
         return False
     
     return print(f'{info}: {message}')
+
+import multiprocessing.pool
+import functools
+
+def timeout(max_timeout):
+    """Timeout decorator, parameter in seconds."""
+    def timeout_decorator(item):
+        """Wrap the original function."""
+        @functools.wraps(item)
+        def func_wrapper(*args, **kwargs):
+            """Closure for function."""
+            pool = multiprocessing.pool.ThreadPool(processes=1)
+            async_result = pool.apply_async(item, args, kwargs)
+            # raises a TimeoutError if execution exceeds max_timeout
+            return async_result.get(max_timeout)
+        return func_wrapper
+    return timeout_decorator
 
 
 #######Validation stuff 

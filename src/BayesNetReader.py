@@ -44,9 +44,9 @@ import pickle
 
 
 class BayesNetReader:
-    bn = {}
 
     def __init__(self, file_name):
+        self.bn = {}
         self.read_data(file_name)
         self.tokenise_data()
         self.load_regression_models()

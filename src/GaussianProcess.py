@@ -119,11 +119,12 @@ class GaussianProcess():
         print("Running Time="+str(self.running_time)+" secs.")
 
 
-if len(sys.argv) != 3:
-    print("USAGE: GaussignProcess.py [training_file.csv] [test_file.csv]")
-    print("EXAMPLE> GaussignProcess.py data_banknote_authentication-train.csv data_banknote_authentication-test.csv")
-    exit(0)
-else:
-    datafile_train = sys.argv[1]
-    datafile_test = sys.argv[2]
-    GaussianProcess(datafile_train, datafile_test)
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        print("USAGE: GaussignProcess.py [training_file.csv] [test_file.csv]")
+        print("EXAMPLE> GaussignProcess.py data_banknote_authentication-train.csv data_banknote_authentication-test.csv")
+        exit(0)
+    else:
+        datafile_train = sys.argv[1]
+        datafile_test = sys.argv[2]
+        GaussianProcess(datafile_train, datafile_test)

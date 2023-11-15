@@ -42,11 +42,11 @@ def get_pc_stable_structure(data_train, method='chisq', independence_threshold=0
     # pcs_test.create_directional_edge_using_immorality()
     
     rand_dag = pcs_test.randomised_directed_graph()
-    # nx.draw_shell(rand_dag, with_labels=True)
-    # plt.show()
+    nx.draw_shell(rand_dag, with_labels=True)
+    plt.show()
     
     # # creating the config file
-    data = utils.topological_sort_for_structure(pcs_test.nodes, rand_dag)
+    data = utils.topological_sort_for_structure(rand_dag)
     config_path = utils.config_structure_file(data, 'pc-diabetes-structure', 'run_test')
     
     return config_path
@@ -99,14 +99,14 @@ if __name__ == "__main__":
     #############################
     
     # config_file = get_naive_bayes_struct(train_data,test_data,target_value)
-    # config_file = get_pc_stable_structure(train_data, method='chisq', independence_threshold=0.05)
+    config_file = get_pc_stable_structure(train_data, method='chisq', independence_threshold=0.05)
     
     
     
     #############################
     ###### CPT Generator ########
     #############################
-    # CPT_Generator(config_file, train_data)
+    CPT_Generator(config_file, train_data)
     
     
     
@@ -114,19 +114,24 @@ if __name__ == "__main__":
     # print(run_nb_classifier.estimate_probabilities)
     
     
+    #############################
+    ###### Model Evaluator ######
+    #############################
+    # config_file = 'config/config-pc-diabetes-structure-run_test-11-15_16:36:13.txt'
+    # config_file = 'config/config-nb-diabetes-structure-run_test-11-15_17:43:09.txt'
+    evaluator = me(config_file, train_data,test_data, True)
+    
     ###################################
-    ###### Inference Generator ########
+    ###### Inference ##################
     ###################################
     
     # # we can only run an inference method with parents of the variable we are interested in?
-    # exact_inference = bayes_net_exact_inference(config_file, 'P(Yellow_Fingers|Lung_cancer=0)', 1000)   
-    
-    config_file = 'config/config-pc-diabetes-structure-run_test-11-15_16:36:13.txt'
-    evaluator = me(config_file, train_data,test_data, True)
+    exact_inference = bayes_net_exact_inference(config_file, "P(Outcome|Glucose=2,BMI=2,Age=2)", 1000)   
+
      
     # # gauss_proc = gaussian_process('data/diabetes_data-original-train.csv', 'data/diabetes_data-original-test.csv')
     
-    # rej = rejection_sampling('config/config-lungcancer.txt', "P(Yellow_Fingers|Lung_cancer=1,Anxiety=1)", 1000)
+    rej = rejection_sampling(config_file, "P(Outcome|Glucose=2,BMI=2,Age=2)", 1000)
     # rej = rejection_sampling('config/config-alarm.txt', "P(B|J=true,M=true)", 100)
 
     print('end')

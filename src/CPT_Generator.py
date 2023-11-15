@@ -198,14 +198,14 @@ class CPT_Generator(BayesNetReader, NB_Classifier):
         structure = str(structure).replace('[', '').replace(']', '')
         structure = str(structure).replace('\'', '').replace(', ', ';')
 
-        with open(self.configfile_name, 'w') as cfg_file:
-            cfg_file.write("name:"+str(name))
-            cfg_file.write('\n')
-            cfg_file.write('\n')
-            cfg_file.write("random_variables:"+str(rand_vars))
-            cfg_file.write('\n')
-            cfg_file.write('\n')
-            cfg_file.write("structure:"+str(structure))
+        with open(self.configfile_name, 'a') as cfg_file:
+            # cfg_file.write("name:"+str(name))
+            # cfg_file.write('\n')
+            # cfg_file.write('\n')
+            # cfg_file.write("random_variables:"+str(rand_vars))
+            # cfg_file.write('\n')
+            # cfg_file.write('\n')
+            # cfg_file.write("structure:"+str(structure))
             cfg_file.write('\n')
             cfg_file.write('\n')
             for key, cpt in self.CPTs.items():

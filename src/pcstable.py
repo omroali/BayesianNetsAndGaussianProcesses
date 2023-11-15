@@ -133,24 +133,6 @@ class PCStable:
         nx.draw_shell(DiG, with_labels=True)
         plt.show() 
         
-                    
-        
-        # DiGraph = nx
-        
-        
-        # immporal edges 
-    
-    @staticmethod   
-    def topological_sort_for_structure(di_graph: nx.DiGraph) -> str:
-        output_struct = []
-        struct_list = [(node,list(di_graph.predecessors(node))) for node in nx.topological_sort(di_graph)]
-        for [node, parents] in struct_list:
-            if len(parents) > 0:
-                output_struct.append(f'P({node}|{",".join(parents)})')
-            else:
-                output_struct.append(f'P({node})')
-        return ';'.join(output_struct)
-                
     @staticmethod
     def generate_config_file(structure) -> None:
         
@@ -364,10 +346,11 @@ class PCStable:
     
     @property
     def get_graph_edges(self) -> list[str]:
-        # for edge in self.graph.edges():
-        #     Edge(edge[0], edge[1], [], self.ci, [], threshold=self.independence_threshold)
         return list(self.graph.edges())
     
+    @property
+    def nodes(self) -> list[str]:
+        return list(self.graph.nodes())
     
 # if __name__ == '__main__':
 
