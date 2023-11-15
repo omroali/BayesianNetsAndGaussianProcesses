@@ -17,22 +17,22 @@
 #############################################################################
 
 import sys
+
+import tqdm
 from BayesNetReader import BayesNetReader
-from NB_Classifier import NB_Classifier as nbc
+from NB_Classifier import NB_Classifier
 
 
-class CPT_Generator(BayesNetReader, nbc):
-    configfile_name = None
-    bn = None
-    nbc = None
-    countings = {}
-    CPTs = {}
-    constant_l = 1  # to avoid zero probabilities
+class CPT_Generator(BayesNetReader, NB_Classifier):
 
     def __init__(self, configfile_name, datafile_name):
+        self.countings = {}
+        self.CPTs = {}
+        self.constant_l = 1  # to avoid zero probabilities
+
         self.configfile_name = configfile_name
         self.bn = BayesNetReader(configfile_name)
-        self.nbc = nbc(None)
+        self.nbc = NB_Classifier(None)
         self.nbc.read_data(datafile_name)
         self.generate_prior_and_conditional_countings()
         self.generate_probabilities_from_countings()
@@ -96,8 +96,8 @@ class CPT_Generator(BayesNetReader, nbc):
                     for key, count in counts.items():
                         if key.endswith("|"+parents_value):
                             _sum += count
-                    # vars = {val for i,val in enumerate(variable.split(" "))}
-                    J = len(self.nbc.rv_key_values[vars])
+
+                    J = len(self.nbc.rv_key_values[variable])
                     Jl = J*self.constant_l
                     for key, count in counts.items():
                         if key.endswith("|"+parents_value):
@@ -183,9 +183,15 @@ class CPT_Generator(BayesNetReader, nbc):
         print("\nWRITING config file with CPT tables...")
         print("See rewritten file "+str(self.configfile_name))
         print("---------------------------------------------------")
+        try:
+            rand_vars = self.bn.bn["random_variable"]
+        except:
+            rand_vars = self.nbc.rand_vars
+            rand_vars = [f'{var}({var})' for var in rand_vars]
+            
         name = self.bn.bn["name"]
+        structure = self.bn.bn["structure"]
 
-        rand_vars = self.bn.bn["random_variables_raw"]
         rand_vars = str(rand_vars).replace('[', '').replace(']', '')
         rand_vars = str(rand_vars).replace('\'', '').replace(', ', ';')
 
