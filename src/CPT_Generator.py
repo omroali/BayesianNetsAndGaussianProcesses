@@ -18,10 +18,10 @@
 
 import sys
 from BayesNetReader import BayesNetReader
-from NB_Classifier import NB_Classifier
+from NB_Classifier import NB_Classifier as nbc
 
 
-class CPT_Generator(BayesNetReader, NB_Classifier):
+class CPT_Generator(BayesNetReader, nbc):
     configfile_name = None
     bn = None
     nbc = None
@@ -32,7 +32,7 @@ class CPT_Generator(BayesNetReader, NB_Classifier):
     def __init__(self, configfile_name, datafile_name):
         self.configfile_name = configfile_name
         self.bn = BayesNetReader(configfile_name)
-        self.nbc = NB_Classifier(None)
+        self.nbc = nbc(None)
         self.nbc.read_data(datafile_name)
         self.generate_prior_and_conditional_countings()
         self.generate_probabilities_from_countings()
@@ -96,8 +96,8 @@ class CPT_Generator(BayesNetReader, NB_Classifier):
                     for key, count in counts.items():
                         if key.endswith("|"+parents_value):
                             _sum += count
-
-                    J = len(self.nbc.rv_key_values[variable])
+                    # vars = {val for i,val in enumerate(variable.split(" "))}
+                    J = len(self.nbc.rv_key_values[vars])
                     Jl = J*self.constant_l
                     for key, count in counts.items():
                         if key.endswith("|"+parents_value):
