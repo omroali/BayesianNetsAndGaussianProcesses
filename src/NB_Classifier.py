@@ -6,30 +6,39 @@
 # the names of random variables -- the last being the variable to predict.
 # This implementation aims to be agnostic of the data (no hardcoded vars/probs)
 #
+# This program is able to handle both discrete and continuous data, which is 
+# automatically detected by updating flag continuous_inputs (initialised to False). 
+#
 # Version: 1.0, Date: 03 October 2022
 # Version: 1.1, Date: 03 October 2023 more compatible with CPT_Generator
 # Version: 1.2, Date: 08 October 2023 more compatible with ModelEvaluator
-# Version: 1.2, Date: 10 November 2023 by Omar Ali for assignment convenience
+# Version: 1.3, Date: 01 November 2023 support for Gaussian distributions
 # Contact: hcuayahuitl@lincoln.ac.uk
 #############################################################################
 
 import sys
 import math
 import time
+import numpy as np
 
 
 class NB_Classifier:
+    rand_vars = [] # names of random variables
+    rv_key_values = {} # values of random variables
+    rv_all_values = [] # data points/instances of the dataset
+    predictor_variable = None # a.k.a. 'target variable'
+    num_data_instances = 0 # number of data points/instances
+    default_missing_count = 0.000001 # to avoid zero probabilities
+    probabilities = {} # parameters of discrete Naive Bayes models
+    gaussian_means = {} # parameters of Gaussian Naive Bayes models
+    gaussian_stdevs = {} # parameters of Gaussian Naive Bayes models
+    predictions = [] # probabilistic predictions for rv_all_values
+    log_probabilities = False # log probabilities are negative values
+    continuous_inputs = False # flag to set discrete or continuous data
+    stardardise_data = True # use standardised data instead of raw data
+    verbose = False
 
     def __init__(self, file_name, fitted_model=None):
-        self.rand_vars = []
-        self.rv_key_values = {}
-        self.rv_all_values = []
-        self.predictor_variable = None
-        self.num_data_instances = 0
-        self.default_missing_count = 0.000001
-        self.probabilities = {}
-        self.predictions = []
-        self.log_probabilities = False
         if file_name is None:
             return
         else:
@@ -37,7 +46,10 @@ class NB_Classifier:
 
         if fitted_model is None:
             self.training_time = time.time()
-            self.estimate_probabilities()
+            if self.continuous_inputs:
+                self.estimate_means_and_standard_deviations()
+            else:
+                self.estimate_probabilities()
             self.training_time = time.time() - self.training_time
 
         else:
@@ -59,15 +71,30 @@ class NB_Classifier:
         with open(data_file) as csv_file:
             for line in csv_file:
                 line = line.strip()
+                line = line.replace('ï»¿', '')
+                line = line.replace('∩╗┐', '')
+
                 if len(self.rand_vars) == 0:
                     self.rand_vars = line.split(',')
+                    print("VARS="+str(self.rand_vars))
                     for variable in self.rand_vars:
                         self.rv_key_values[variable] = []
                 else:
                     values = line.split(',')
+
+                    if len(self.rv_all_values) == 0:
+                        self.continuous_inputs = self.check_datatype(values)
+                        print("self.continuous_inputs="+str(self.continuous_inputs))
+
+                    if self.continuous_inputs is True:
+                        values = [float(value) for value in values]
+
                     self.rv_all_values.append(values)
                     self.update_variable_key_values(values)
                     self.num_data_instances += 1
+
+        if self.stardardise_data is True and self.continuous_inputs and True:
+            self.rv_all_values = self.standardise_data(self.rv_all_values, data_file)
 
         self.predictor_variable = self.rand_vars[len(self.rand_vars)-1]
 
@@ -76,6 +103,29 @@ class NB_Classifier:
         print("VARIABLE VALUES (first 10)=%s" % (self.rv_all_values[:10]))
         print("PREDICTOR VARIABLE=%s" % (self.predictor_variable))
         print("|data instances|=%d" % (self.num_data_instances))
+
+    def standardise_data(self, X, datafile):
+        print("NORMALISING inputs of datafile=%s..." % (datafile))
+        X = np.asarray(X)
+        X_normalised = np.zeros(X.shape)
+        for i in range(0, len(X[0])):
+            if i == len(X[0])-1:
+                X_normalised[:,i] = X[:,i].astype(int)
+            else:
+                X_column_i = X[:,i]
+                _mean = np.mean(X_column_i)
+                _std = np.std(X_column_i)
+                X_normalised[:,i] = (X_column_i-_mean)/(_std)
+        print("X_normalised=",X_normalised)
+        return X_normalised
+
+    def check_datatype(self, values):
+        for feature_value in values:
+            if feature_value[0].isalpha():
+                return False # discrete data (due to values being alphabetic characters)
+            elif len(feature_value.split('.')) > 1 or len(feature_value) > 1:
+                return True # continuous data (due to decimals or values above digits)
+        return False # discrete data (due to not finding decimals and only digits)
 
     def update_variable_key_values(self, values):
         for i in range(0, len(self.rand_vars)):
@@ -181,35 +231,46 @@ class NB_Classifier:
     def test_learnt_probabilities(self, file_name):
         print("\nEVALUATING on "+str(file_name))
 
-        # iterate over all instances in the test data
+        # iterates over all instances in the test data
         for instance in self.rv_all_values:
             distribution = {}
-            print("Input vector=%s" % (instance))
+            if self.verbose:
+                print("Input vector=%s" % (instance))
 
-            # iterate over all values in the predictor variable
+            # iterates over all values in the predictor variable
             for predictor_value in self.rv_key_values[self.predictor_variable]:
                 prob_dist = self.probabilities[self.predictor_variable]
                 prob = prob_dist[predictor_value]
 
-                # iterate over all instance values except the predictor var.
+                # iterates over all instance values except the predictor var.
                 for value_index in range(0, len(instance)-1):
                     variable = self.rand_vars[value_index]
-                    value = instance[value_index]
-                    prob_dist = self.probabilities[variable]
-                    cond_prob = value+"|"+predictor_value
+                    x = instance[value_index]
+                    if self.continuous_inputs is False:
+                        prob_dist = self.probabilities[variable]
+                        cond_prob = x+"|"+predictor_value
 
-                    if self.log_probabilities is False:
-                        prob *= prob_dist[cond_prob]
+                        if self.log_probabilities is False:
+                            prob *= prob_dist[cond_prob]
+                        else:
+                            prob += prob_dist[cond_prob]
                     else:
-                        prob += prob_dist[cond_prob]
+                        # this block of code has only been tested with non-log probabilities
+                        probA = self.get_probability_density(x, variable, predictor_value)
+                        probB = self.get_probability_density(x, variable, abs(1-predictor_value))
+                        unnormalised_dist = {'predictor_value':probA, 'nonpredictor_value':probB}
+                        prob_dist = self.get_normalised_distribution(unnormalised_dist)
+                        probability = prob_dist['predictor_value']
+                        prob *= probability
 
                 distribution[predictor_value] = prob
 
             normalised_dist = self.get_normalised_distribution(distribution)
             self.predictions.append(normalised_dist)
-            # print("UNNORMALISED DISTRIBUTION=%s" % (distribution))
-            # print("NORMALISED DISTRIBUTION=%s" % (normalised_dist))
-            # print("---")
+            if self.verbose:
+                print("UNNORMALISED DISTRIBUTION=%s" % (distribution))
+                print("NORMALISED DISTRIBUTION=%s" % (normalised_dist))
+                print("---")
 
     def get_normalised_distribution(self, distribution):
         normalised_dist = {}
@@ -224,28 +285,53 @@ class NB_Classifier:
             normalised_dist[var_val] = normalised_prob
 
         return normalised_dist
-    
-    
-    # def get_str(data):
-    #     """
-    #     evaluting all combinations of random vaiables for Naive Bayes
-    #     """
-    #     # reading data
-    #     type, random_variables, result, input_data, output_data = data
 
-    #     # step1 get all    
-    #     marProb = calculateMarginalProbabilities(data)
-    #     print(marProb[result])
+    def estimate_means_and_standard_deviations(self):
+        print("\nCALCULATING means and standard deviations...")
 
+        # iterate over all random variables except the predictor var.
+        for value_index in range(0, len(self.rand_vars)-1):
+            variable = self.rand_vars[value_index]
+            print("variable="+str(variable))
 
-    #     # step 2: get all possible conditional probabilities assuming all are independant
-    #     condProb = allConditionalProbabilities(data)
+            # iterate over all training instances gather feature vectors
+            feature_vectors = {}
+            for instance in self.rv_all_values:
+                predictor_value = instance[len(instance)-1]
+                value = instance[value_index]
+                if predictor_value not in feature_vectors:
+                    feature_vectors[predictor_value] = []
+                feature_vectors[predictor_value].append(value)
 
-    #     structure = condProb.copy()
-    #     structure[result] = marProb[result]
-    #     return structure
-    
-    
+            # calculate means and standard deviations from the feature vectors
+            self.gaussian_means[variable] = {}
+            self.gaussian_stdevs[variable] = {}
+            for predictor_value in feature_vectors:
+                mean = np.mean(feature_vectors[predictor_value])
+                stdev = np.std(feature_vectors[predictor_value])
+                self.gaussian_means[variable][predictor_value] = mean
+                self.gaussian_stdevs[variable][predictor_value] = stdev
+
+            print("\tmeans="+str(self.gaussian_means[variable]))
+            print("\tstdevs="+str(self.gaussian_stdevs[variable]))
+
+        # compute prior probabilities of the predictor variable
+        prior_distribution = {}
+        print("self.predictor_variable="+str(self.predictor_variable))
+        print("self.rv_key_values="+str(self.rv_key_values))
+        for predictor_value in self.rv_key_values[self.predictor_variable]:
+            prob = len(feature_vectors[predictor_value])/len(self.rv_all_values)
+            prior_distribution[predictor_value] = prob
+        self.probabilities[self.predictor_variable] = prior_distribution
+        print("priors="+str(self.probabilities[self.predictor_variable]))
+
+    def get_probability_density(self, x, variable, predictor_value):
+        mean = self.gaussian_means[variable][predictor_value]
+        stdev = self.gaussian_stdevs[variable][predictor_value]
+        e_val = -0.5*np.power((x-mean)/stdev, 2)
+        probability = (1/(stdev*np.sqrt(2*np.pi))) * np.exp(e_val)
+        return probability
+
 
 
 if __name__ == "__main__":

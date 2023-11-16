@@ -23,8 +23,8 @@ class PCStable:
         self.directional_graph = []
         # self.markovChains = []
         
-        print(f'Using conditional test: {method}')
-        print(f'Test threshold: {independence_threshold}')
+        ## print(f'Using conditional test: {method}')
+        ## print(f'Test threshold: {independence_threshold}')
                 
     def addImmorality(self, node: str | list[str], edge: list[str]) -> None:
         self.immoral_nodes.append([node, edge])
@@ -44,7 +44,7 @@ class PCStable:
         while (severless_count < 10):
             severed = False
             
-            if log_level >= 1: print(f'\n--iteration {iteration}--')
+            # if log_level >= 1: ## print(f'\n--iteration {iteration}--')
             edge_parents_list_for_independence_test = self.get_combinations_of_adjacent_nodes(iteration)
             edges = self.create_edges(edge_parents_list_for_independence_test)
             
@@ -113,7 +113,7 @@ class PCStable:
         
         for edges in dir_edges:
             DiG.add_edges_from(edges, directed=True)
-            print(edges)
+            ## print(edges)
         
         un_dir_edges = []
         for node in self.non_immoral_nodes:
@@ -183,9 +183,9 @@ class PCStable:
                 paths = list(nx.all_simple_edge_paths(self.graph, source = v_i, target = v_j, cutoff=cutoff))
                 for path in paths:
                     if len(path) != cutoff: continue
-                    # print(f'v_i = {v_i}, v_j = {v_j}, path = {path}, connections = {connections}')
+                    # ## print(f'v_i = {v_i}, v_j = {v_j}, path = {path}, connections = {connections}')
                     parents = list(set(node for edge in path for node in edge if node not in [v_i, v_j]))
-                    # print(f'parents: {parents}, connections: {connections}, valid: {len(parents) == connections}')
+                    # ## print(f'parents: {parents}, connections: {connections}, valid: {len(parents) == connections}')
                     if len(parents) != connections: continue
                     output.append([v_i, v_j ,parents])
 
@@ -215,7 +215,7 @@ class PCStable:
         parent_nodes = []
         for edge in all_edges:
             parent_nodes = list(nx.all_simple_edge_paths(self.graph, source = edge[0], target = edge[1], cutoff=connections))
-        print(parent_nodes)
+        ## print(parent_nodes)
     
     def get_combinations_of_adjacent_nodes(self, connections = 0) -> list[list[str|list[str]]]:
         '''
@@ -254,7 +254,7 @@ class PCStable:
                     #update class variable and return array
                     removed_edges.append(edge)
                     self.severed_edges.append(edge)
-                    print(f'Severed: {edge.var_i} {edge.var_j} | {edge.parents} || p = {edge.test_value}')
+                    ## print(f'Severed: {edge.var_i} {edge.var_j} | {edge.parents} || p = {edge.test_value}')
 
         return removed_edges
     
@@ -374,9 +374,9 @@ class PCStable:
     # for edge in edges:
     #     for con in conditioning_variables:
     #         if con not in edge:
-    #             print(f'edge: {edge}, cond: {con}')
+    #             ## print(f'edge: {edge}, cond: {con}')
     #         else:
     #             break
-    #     print(' ')
+    #     ## print(' ')
     
         

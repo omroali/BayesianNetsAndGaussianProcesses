@@ -43,7 +43,6 @@ class ConditionalIndependence:
             raise ValueError(f'ERROR: Unknown test type {test} please use one of {self.all_tests}')
         self.test = test
         self.use_continuous_data = True if self.test in self.continuous_data_tests else False
-        print(f'Using test: {self.test}')
         if not self.use_continuous_data:
             self.chisq_obj = Chisq_or_Gsq(data, self.test)
         else:
@@ -51,8 +50,8 @@ class ConditionalIndependence:
             # self.chisq_obj = CIT(data, self.test)
 
     def read_data(self, data_file):
-        # print("\nREADING data file %s..." % (data_file))
-        # print("---------------------------------------")
+        ## print("\nREADING data file %s..." % (data_file))
+        ## print("---------------------------------------")
 
         with open(data_file) as csv_file:
             for line in csv_file:
@@ -64,8 +63,8 @@ class ConditionalIndependence:
                     values = list(map(float, values)) if self.use_continuous_data else values
                     self.rv_all_values.append(values)
 
-        # print("RANDOM VARIABLES=%s" % (self.rand_vars))
-        # print("VARIABLE VALUES (first 10)=%s" % (self.rv_all_values[:10])+"\n")
+        ## print("RANDOM VARIABLES=%s" % (self.rand_vars))
+        ## print("VARIABLE VALUES (first 10)=%s" % (self.rv_all_values[:10])+"\n")
         returnVals = np.array(self.rv_all_values) if self.use_continuous_data else self.rv_all_values
         return returnVals
 
@@ -91,7 +90,7 @@ class ConditionalIndependence:
             raise Exception("ERROR: chisq_obj is None")
         
         p = self.chisq_obj(var_i, var_j, pars)
-        print(f'X2test: {self.test} -> Vi={var_i}, Vj={var_j}, pars={pars}, p={p}')
+        # ## print(f'X2test: Vi={self.rand_vars[var_i]}, Vj={self.rand_vars[var_j]}, pa_i={parents}, p={p}')
         return p
     
     @staticmethod
@@ -117,9 +116,9 @@ class ConditionalIndependence:
 
 # if __name__=="__main":
 #     if len(sys.argv) != 3:
-#         print("USAGE: ConditionalIndepencence.py [train_file.csv] [I(Vi,Vj|parents)]")
-#         print("EXAMPLE1: python ConditionalIndependence.py lang_detect_train.csv \"I(X1,X2|Y)\“")
-#         print("EXAMPLE2: python ConditionalIndependence.py lang_detect_train.csv \"I(X1,X15|Y)\“")
+#         ## print("USAGE: ConditionalIndepencence.py [train_file.csv] [I(Vi,Vj|parents)]")
+#         ## print("EXAMPLE1: python ConditionalIndependence.py lang_detect_train.csv \"I(X1,X2|Y)\“")
+#         ## print("EXAMPLE2: python ConditionalIndependence.py lang_detect_train.csv \"I(X1,X15|Y)\“")
 #         exit(0)
 #     else:
 #         data_file = sys.argv[1]

@@ -17,7 +17,7 @@ import networkx as nx
 # example dictionary: query={query_var:'B', evidence:'J=true,M=true'}
 # example tokenised dictionary: query={query_var:'B', evidence:{'J':'true','M':'true'}}
 # returns a tokenised dictionary as in the example above
-def tokenise_query(prob_query, verbose= False):
+def tokenise_query(prob_query, verbose):
     if verbose: print("\nTOKENISING probabilistic query="+str(prob_query))
 
     query = {}
@@ -58,7 +58,7 @@ def get_probability_given_parents(V, v, evidence, bn):
     probability = 0
 
     if parents is None and is_gaussian == False:
-        cpt = bn["CPT("+V+")"]        
+        cpt = bn["CPT("+V+")"]
         probability = cpt[v]
 
     elif parents is not None and is_gaussian == False:
@@ -165,7 +165,7 @@ def has_cycles(edges):
 
     if cycles is False:
         print("No cycles found!")
-    return G, cycles
+    return cycles
 
 # returns the probability density of the given arguments
 def get_gaussian_density(x, mean, stdev):

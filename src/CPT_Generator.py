@@ -18,7 +18,6 @@
 
 import sys
 
-import tqdm
 from BayesNetReader import BayesNetReader
 from NB_Classifier import NB_Classifier
 
@@ -39,11 +38,11 @@ class CPT_Generator(BayesNetReader, NB_Classifier):
         self.write_CPTs_to_configuration_file()
 
     def generate_prior_and_conditional_countings(self):
-        print("\nGENERATING countings for prior/conditional distributions...")
-        print("-------------------------------------------------------------")
+        ## print("\nGENERATING countings for prior/conditional distributions...")
+        ## print("-------------------------------------------------------------")
 
         for pd in self.bn.bn["structure"]:
-            print(str(pd))
+            ## print(str(pd))
             p = pd.replace('(', ' ')
             p = p.replace(')', ' ')
             tokens = p.split("|")
@@ -65,15 +64,15 @@ class CPT_Generator(BayesNetReader, NB_Classifier):
                 self.get_counts(variable_index, parent_indexes, counts)
 
             self.countings[pd] = counts
-            print("counts="+str(counts))
-            print()
+            ## print("counts="+str(counts))
+            ## print()
 
     def generate_probabilities_from_countings(self):
-        print("\nGENERATING prior and conditional probabilities...")
-        print("---------------------------------------------------")
+        ## print("\nGENERATING prior and conditional probabilities...")
+        ## print("---------------------------------------------------")
 
         for pd, counts in self.countings.items():
-            print(str(pd))
+            ## print(str(pd))
             tokens = pd.split("|")
             variable = tokens[0].replace("P(", "")
             cpt = {}
@@ -104,14 +103,14 @@ class CPT_Generator(BayesNetReader, NB_Classifier):
                             cpt[key] = (count+self.constant_l)/(_sum+Jl)
 
             self.CPTs[pd] = cpt
-            print("CPT="+str(cpt))
-            print()
+            ## print("CPT="+str(cpt))
+            ## print()
 
     def get_variable_index(self, variable):
         for i in range(0, len(self.nbc.rand_vars)):
             if variable == self.nbc.rand_vars[i]:
                 return i
-        print("WARNING: couldn't find index of variables=%s" % (variable))
+        ## print("WARNING: couldn't find index of variables=%s" % (variable))
         return None
 
     def get_parent_indexes(self, parents):
@@ -180,9 +179,9 @@ class CPT_Generator(BayesNetReader, NB_Classifier):
             counts[value] += 1
 
     def write_CPTs_to_configuration_file(self):
-        print("\nWRITING config file with CPT tables...")
-        print("See rewritten file "+str(self.configfile_name))
-        print("---------------------------------------------------")
+        ## print("\nWRITING config file with CPT tables...")
+        ## print("See rewritten file "+str(self.configfile_name))
+        ## print("---------------------------------------------------")
         try:
             rand_vars = self.bn.bn["random_variable"]
         except:
@@ -223,8 +222,8 @@ class CPT_Generator(BayesNetReader, NB_Classifier):
 
 if __name__=="__main__":
     if len(sys.argv) != 3:
-        print("USAGE: CPT_Generator.py [your_config_file.txt] [training_file.csv]")
-        print("EXAMPLE> CPT_Generator.py config-playtennis.txt play_tennis-train.csv")
+        ## print("USAGE: CPT_Generator.py [your_config_file.txt] [training_file.csv]")
+        ## print("EXAMPLE> CPT_Generator.py config-playtennis.txt play_tennis-train.csv")
         exit(0)
 
     else:
