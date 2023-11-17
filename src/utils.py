@@ -20,7 +20,7 @@ def read_csv(filePath, target: str):
     @param target is the random variable to be evaluated
     @return a dictionary of the data
     '''
-    read_data = np.genfromtxt(filePath, delimiter=",", dtype="<U32")
+    read_data = np.genfromtxt(filePath, delimiter=",", dtype="<U32", encoding='utf-8-sig')
     response_data = {}
     headers = {}
     header_data = []
@@ -37,11 +37,11 @@ def read_csv(filePath, target: str):
         headers["random_variables"] = np.delete(header_data, idx_result)
         response_data["output"] = read_data[1:, idx_result]  # i.e. the last column
         response_data["input_variables"] = np.delete(read_data, idx_result, axis=1)[1:]
-        print(f'Training data formatted to evaluate {headers["result"]}')
+        ## print(f'Training data formatted to evaluate {headers["result"]}')
     else:
         headers["random_variables"] = header_data
         response_data["input_variables"] = read_data
-        print("Testing data formatted")
+        ## print("Testing data formatted")
 
     return {
         "type": "training" if target else "testing",
@@ -232,7 +232,7 @@ def independent_probability_structure(data):
 
     # step1 get all    
     marProb = calculateMarginalProbabilities(data)
-    print(marProb[result])
+    ## print(marProb[result])
     
 
     # step 2: get all possible conditional probabilities assuming all are independent
@@ -254,7 +254,7 @@ def independent_probability_structure(data):
     graph.add_edges_from(edges_list)
     graph.add_nodes_from(node_list)
 
-    structure_array = topological_sort_for_structure(list(node_list) ,graph)
+    structure_array = topological_sort_for_structure(graph)
 
     return structure_data, structure_array 
 
@@ -309,8 +309,8 @@ def config_structure_file(node_structure: dict, file_name: str, unique: str = ''
     '''
     random_variables, structure = node_structure.values()
     if unique != '': unique = '-' + unique + '-' + datetime.utcnow().strftime("%m-%d_%H:%M:%S")
-    new_file_path = f'config/config-{file_name}{unique}.txt'
-    with open(new_file_path, "w") as file:
+    new_file_path = f'config/{file_name}{unique}.txt'
+    with open(new_file_path, "w", encoding='utf-8-sig') as file:
         file.write(f"name:{file_name}")
         file.write("\n\nrandom_variables:" + random_variables)
         file.write("\n\nstructure:" + structure)
@@ -415,7 +415,7 @@ def logging(info:str, message):
     if info in types:
         return False
     
-    return print(f'{info}: {message}')
+    return ## print(f'{info}: {message}')
 
 import multiprocessing.pool
 import functools
@@ -441,7 +441,7 @@ def timeout(max_timeout):
 #         if node_1 not in Graph.nodes() or node_2 not in Graph.nodes():
 #             raise ValueError("node_1 and node_2 must be in Graph")
 #         if cond_node and cond_node not in Graph.nodes():
-#             print(cond_node)
+#             ## print(cond_node)
 #             raise ValueError("conditional node must be in Graph")
 #         if method not in ['dijkstra', 'bellman-ford']:
 #             raise ValueError("method must be 'dijkstra' or 'bellman-ford'")

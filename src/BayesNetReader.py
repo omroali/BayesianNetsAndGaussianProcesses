@@ -44,9 +44,9 @@ import pickle
 
 
 class BayesNetReader:
+    bn = {}
 
     def __init__(self, file_name):
-        self.bn = {}
         self.read_data(file_name)
         self.tokenise_data()
         self.load_regression_models()
@@ -54,9 +54,10 @@ class BayesNetReader:
     # starts loading a configuration file into dictionary 'bn', by
     # splitting strings with character ':' and storing keys and values 
     def read_data(self, data_file):
-        ## print("\nREADING data file %s..." % (data_file))
+        # print("\nREADING data file %s..." % (data_file))
 
-        with open(data_file) as cfg_file:
+        with open(data_file, encoding='utf-8-sig') as cfg_file:
+            # data = [[c.replace('\ufeff', '') for c in row] for row in cfg_file]
             key = None
             value = None
             for line in cfg_file:
@@ -77,7 +78,7 @@ class BayesNetReader:
 
         self.bn[key] = value
         self.bn["random_variables_raw"] = self.bn["random_variables"]
-        ## print("RAW key-values="+str(self.bn))
+        # print("RAW key-values="+str(self.bn))
 
     # continues loading a configuration file into dictionary 'bn', by
     # separating key-value pairs as follows:
@@ -85,12 +86,15 @@ class BayesNetReader:
     # (b) CPTs are stored as an inner dictionary in self.bn['CPT']
 	# (c) all others are stored as key-value pairs in self.bn[key]
     def tokenise_data(self):
-        ## print("TOKENISING data...")
+        # print("TOKENISING data...")
         rv_key_values = {}
 
         for key, values in self.bn.items():
+            
+            if key == "name":
+                values = values.strip()
 
-            if key == "random_variables":
+            elif key == "random_variables":
                 var_set = []
                 for value in values.split(";"):
                     if value.find("(") and value.find(")"):
@@ -106,11 +110,14 @@ class BayesNetReader:
                 # store Conditional Probability Tables (CPTs) as dictionaries
                 cpt = {}
                 sum = 0
+                if type(values) is dict:
+                    # convert to array of key=value;key=value;...
+                    values = ";".join([str(k)+"="+str(v) for k,v in values.items()])
                 for value in values.split(";"):
                     pair = value.split("=")
                     cpt[pair[0]] = float(pair[1])
                     sum += float(pair[1])
-                ## print("key=%s cpt=%s sum=%s" % (key, cpt, sum))
+                # print("key=%s cpt=%s sum=%s" % (key, cpt, sum))
                 self.bn[key] = cpt
 
                 # store unique values for each random variable
@@ -122,12 +129,14 @@ class BayesNetReader:
                 rv_key_values[rand_var] = unique_values
 
             else:
+                if type(values) is dict:
+                    continue
                 values = values.split(";")
                 if len(values) > 1:
                     self.bn[key] = values
 
         self.bn['rv_key_values'] = rv_key_values
-        ## print("TOKENISED key-values="+str(self.bn))
+        # print("TOKENISED key-values="+str(self.bn))
 
     # puts the following key-value pairs in 'bn' as follows:
     # means of each random variable in regression_models['means']
@@ -144,8 +153,8 @@ class BayesNetReader:
         if  is_regression_models_available:
             try:
                 configfile_name = self.bn["regression_models"]
-                ## print("\nLOADING %s ..." % (configfile_name))
-                models_file = open(configfile_name, 'rb')
+                print("\nLOADING %s ..." % (configfile_name))
+                models_file = open(configfile_name, 'rb', encoding='utf-8-sig')
                 regression_models = pickle.load(models_file)
                 self.bn["means"] = regression_models["means"]
                 self.bn["stdevs"] = regression_models["stdevs"]
@@ -154,10 +163,10 @@ class BayesNetReader:
                 self.bn["intercepts"] = regression_models["intercepts"]
 				
                 models_file.close()
-                ## print("Regression models loaded!")
+                print("Regression models loaded!")
 
             except Exception:
-                ## print("Couldn't find file %s" % (configfile_name))
+                print("Couldn't find file %s" % (configfile_name))
                 pass
 
 

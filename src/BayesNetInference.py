@@ -36,11 +36,10 @@ import random
 import time
 import BayesNetUtil as bnu
 from BayesNetReader import BayesNetReader
-import numpy as np
-
 
 
 class BayesNetInference(BayesNetReader):
+
 
     def __init__(self, alg_name, file_name, prob_query, num_samples):
         self.query = {}
@@ -57,24 +56,26 @@ class BayesNetInference(BayesNetReader):
         if alg_name == 'InferenceByEnumeration':
             self.prob_dist = self.enumeration_ask()
             normalised_dist = bnu.normalise(self.prob_dist)
-            ## print("unnormalised P(%s)=%s" % (self.query["query_var"], self.prob_dist))
-            ## print("normalised P(%s)=%s" % (self.query["query_var"], normalised_dist))
+            print("Inference-by-enumeration:")
+            print("unnormalised P(%s)=%s" % (self.query["query_var"], self.prob_dist))
+            print("normalised P(%s)=%s" % (self.query["query_var"], normalised_dist))
 
         elif alg_name == 'RejectionSampling':
+            print(f'-\nRejection-sampling-{num_samples}:')
             self.prob_dist = self.rejection_sampling(num_samples)
-            ## print("P(%s)=%s" %(self.query["query_var"], self.prob_dist))
+            print("P(%s)=%s" %(self.query["query_var"], self.prob_dist))
 
         else:
             print("ERROR: Couldn't recognise algorithm="+str(alg_name))
             print("Valid choices={InferenceByEnumeration,RejectionSampling}")
 
         end = time.time()
-        ## print('Execution Time: {}'.format(end-start))
+        print('Execution Time: {}'.format(end-start))
 
     # main method for inference by enumeration, which invokes
 	# enumerate_all() for each domain value of the query variable
     def enumeration_ask(self):
-        if self.verbose: print("\nSTARTING Inference by Enumeration...")
+        if self.verbose: print("-\nSTARTING Inference by Enumeration...")
 
         if "regression_models" not in self.bn:
             # initialisation required for discrete Bayes nets
@@ -126,7 +127,7 @@ class BayesNetInference(BayesNetReader):
     # main method to carry out approximate probabilistic inference,
 	# which invokes prior_sample() and is_compatible_with_evidence()
     def rejection_sampling(self, num_samples):
-        ## print("\nSTARTING rejection sampling...")
+        # print("\nSTARTING rejection sampling...")
         query_variable = self.query["query_var"]
         evidence = self.query["evidence"]
         samples = [] # vector of non-rejected samples
@@ -145,10 +146,10 @@ class BayesNetInference(BayesNetReader):
                 C[value_to_increase] += 1
 
         try:
-            ## print("Countings of query_variable %s=%s" % (query_variable, C))
+            print("Countings of query_variable %s=%s" % (query_variable, C))
             return bnu.normalise(C)
         except:
-            ## print("ABORTED due to insufficient number of samples...")
+            print("ABORTED due to insufficient number of samples...")
             exit(0)
 
     # returns a dictionary of sampled values for each of the random variables
@@ -165,6 +166,21 @@ class BayesNetInference(BayesNetReader):
                 return None
 
         return X
+    
+    # def gibbs_sampling(self, num_samples, num_burnin):
+    #     '''
+    #     gibbs sampler
+    #     '''
+    #     samples = np.zeros((num_samples, len(initial_state)))
+    #     state = initial_state.copy()
+
+    #     for i in range(num_samples + num_burnin):
+    #         for j in range(len(state)):
+    #             state[j] = conditional_distributions[j](state)
+    #         if i >= num_burnin:
+    #             samples[i - num_burnin] = state
+
+    #     return samples
 
     # returns a sampled value for the given random variable as argument
     def get_sampled_value(self, V, sampled):
@@ -186,9 +202,8 @@ class BayesNetInference(BayesNetReader):
                 cumulative_cpt[v] = prob_mass
 
         # check that the probabilities sum to 1 (or almost)
-        # if prob_mass < 0.999 or prob_mass > 1.001:
-        if not np.isclose(prob_mass, 1.0):
-            ## print("ERROR: probabilities=%s do not sum to 1" % (cumulative_cpt))
+        if prob_mass < 0.999 or prob_mass > 1.001:
+            print("ERROR: probabilities=%s do not sum to 1" % (cumulative_cpt))
             exit(0)
 
 		# sample a value from the cummulative distribution generated above
@@ -212,9 +227,9 @@ class BayesNetInference(BayesNetReader):
 
 if __name__ == "__main__":
     if len(sys.argv) < 4 or len(sys.argv) > 5:
-        ## print("USAGE: BayesNetInference.py [inference_algorithm] [your_config_file.txt] [query] (num_samples)")
-        ## print("EXAMPLE1> BayesNetInference.py InferenceByEnumeration config-alarm.txt \"P(B|J=true,M=true)\"")
-        ## print("EXAMPLE2> BayesNetInference.py RejectionSampling config-alarm.txt \"P(B|J=true,M=true)\" 10000")
+        print("USAGE: BayesNetInference.py [inference_algorithm] [your_config_file.txt] [query] (num_samples)")
+        print("EXAMPLE1> BayesNetInference.py InferenceByEnumeration config-alarm.txt \"P(B|J=true,M=true)\"")
+        print("EXAMPLE2> BayesNetInference.py RejectionSampling config-alarm.txt \"P(B|J=true,M=true)\" 10000")
         exit(0)
 
     alg_name = sys.argv[1] # inference algorithm={InferenceByEnumeration,RejectionSampling}
@@ -223,150 +238,3 @@ if __name__ == "__main__":
     num_samples = int(sys.argv[4]) if len(sys.argv)==5 else None # number of samples, e.g., 10000
 
     BayesNetInference(alg_name, file_name, prob_query, num_samples)
-
-
-#     def gibbs_sampling(self, num_samples):
-#         ''' 
-#         input is something like
-#         find me P(Peer_Pressure|Genetics=True,Attention_Disorder=True)
-        
-#         Observed values = Genetics, Attention_Disorder
-#         P(Genetics = True ) = 0.3
-#         P(Attention_Disorder = True) = 0.9
-        
-#         for rand_var in random_variables EXCLUDING : # -> eg randomly selected Born_an_Even_Day
-#             if rand_var in [Genetics, Attention_Disorder], ignore # I think??
-#             P(Born_an_Even_Day) =  P(Born_an_Even_Day=True | vars in random_vars)
-            
-#         do many times
-#         first ignore_number iterations  
-        
-#         '''        
-#         ## print("\nSTARTING gibbs sampling...")
-        
-#         query_variable = self.query["query_var"]
-#         observed = self.query["evidence"]
-#         random_variables = self.bn['random_variables']
-        
-#         # random_variable = 'Smoking'
-#         # P(random_variable| random_variable exluding random_variable)
-#         # # actual gibbs sampling
-#         # for i in range(num_samples):
-#         # for rand_var in random_variables:
-#         #     if rand_var in [var for var in observed.keys()]: continue
-#         nodes_to_update = []
-#         for rand_var in random_variables:
-#             if rand_var in [var for var in observed.keys()]:continue
-#             nodes_to_update.append(rand_var)
-                                
-#         node_probabilities = {}
-#         node_probabilities_start = {}
-#         for node in observed.keys():
-#             node_probabilities[node] = float(observed[node])
-            
-#         for node in nodes_to_update:
-#             node_probabilities_start[node] = random.choice(bnu.get_domain_values(node, self.bn))
-        
-#         for i in range(1000):  
-#             for node in nodes_to_update:
-#                 # ## print('Evaluation Node:', node)
-#                 evidence = [val for val in random_variables if val != node]
-                
-#                 # identify parents, and cousins for Markov Blanket
-#                 parents={}
-#                 children={}
-                
-#                 # finding the parents and children for a given node 
-                
-       
-#                 for node_direction in random_variables:
-#                     if f'P({node}|{node_direction})' in self.bn['structure']:
-#                         parents[node_direction] = node
-#                         ## print(f'parent P({node}|{node_direction})')
-#                     if f'P({node_direction}|{node})' in self.bn['structure']:
-#                         children[node] = node_direction
-#                         ## print(f'child P({node_direction}|{node})')
-                        
-#                 # for child in children:
-#                 #     cousins[child] = []
-#                 #     for node_direction in random_variables:
-#                 #         if f'P({node_direction}|{child})' in self.bn['structure']:
-#                 #             cousins[child].append(node_direction)
-#                 #     if len(cousins[child]) == 0: del(cousins[child])
-
-#                 # get parent
-#                 # parents = bnu.get_parents(node, self.bn)
-#                 parent_probabilities = {}
-#                 child_probabilities = {}
-                
-#                 '''
-#                 domain_values = bnu.get_domain_values(node, self.bn)
-                
-#                 cpt = 1
-#                 for parent in parents:
-#                     cpt *= bnu.get_probability_given_parents(node, domain_values, parent, self.bn)
-#                 for child in children:
-#                     cpt *= bnu.get_probability_given_parents(node, domain_values, child, self.bn)
-                
-                
-         
-#                 # set up search for CPT value for the parent
-#                 # parent_eval = []
-#                 # child_eval = []
-#                 # for parent in parents:
-#                 #     parent_eval.append(f'({node}|{parent})')
-
-#                 # for child in children:
-#                 #     parent_nodes = [node]
-#                 #     if child in cousins.keys(): parent_nodes.append(cousins)
-#                 #     child_eval.append(f'({child}|{",".join(parent_nodes)})')
-                    
-#                 # ## print('parents', parent_eval)
-#                 # ## print('children', child_eval)
-
-#                 # alpha = 0.5 #TODO:self.evaluate_alpha() 
-#                 # p_node = [1]
-
-#                 # all_probabilities = parent_eval+child_eval
-#                 # ## print('all_probabilities', all_probabilities)
-
-#                 # from the bn structure, get the CPT for the edge
-                
-#                 # for probability in node_probabilities:
-#                 # #     # {'Smoking': '1', 'Yellow_Fingers': '1', 'Anxiety': '1', 'Peer_Pressure': '0', 'Born_an_Even_Day': '1', 'Car_Accident': '0', 'Fatigue': '1', 'Allergy': '1', 'Coughing': '1', 'Lung_cancer': '0'}
-#                 # #     selection = node_probabilities_start[node]
-#                 #     cpt *= self.bn[f'CPT{probability}'][node_probabilities_start[node]]
-#                 #     ## print('probability', probability)
-#                 #     ## print('cpt', cpt)
-#                 #     # else: cpt *= node_probabilities[node]
-#                 #     # bnu.get_probability_given_parents()
-#                 if node in node_probabilities.keys(): 
-#                     node_probabilities[node] = cpt
-#                 else:
-#                     node_probabilities[node] = cpt
-                
-#                 choice = random.choice(bnu.get_domain_values(node, self.bn))
-#                 while choice not in node_probabilities_start[node]:
-#                     choice = random.choice(bnu.get_domain_values(node, self.bn))
-#                 choice = node_probabilities_start[node]
-#                 '''
-            
-
-        
-
-# if __name__ == "__main__":
-#     # if len(sys.argv) < 4 or len(sys.argv) > 5:
-#     #     ## print("USAGE: BayesNetInference.py [inference_algorithm] [your_config_file.txt] [query] (num_samples)")
-#     #     ## print("EXAMPLE1> BayesNetInference.py InferenceByEnumeration config-alarm.txt \"P(B|J=true,M=true)\"")
-#     #     ## print("EXAMPLE2> BayesNetInference.py RejectionSampling config-alarm.txt \"P(B|J=true,M=true)\" 10000")
-#     #     exit(0)
-
-#     # alg_name = sys.argv[1] # inference algorithm={InferenceByEnumeration,RejectionSampling}
-#     # file_name = sys.argv[2] # your_config_file.txt, e.g., config-alarm.txt
-#     # prob_query = sys.argv[3] # query, e.g., P(B|J=true,M=true)
-#     # num_samples = int(sys.argv[4]) if len(sys.argv)==5 else None # number of samples, e.g., 10000
-
-#     # BayesNetInference(alg_name, file_name, prob_query, num_samples)
-    
-#     bni = BayesNetInference(file_name='config/config-lungcancer.txt', alg_name='GibbsSampling', prob_query='P(Peer_Pressure|Genetics=0.8,Attention_Disorder=0.2)', num_samples=2)
-#     ## print('hello')

@@ -19,10 +19,14 @@
 # Contact: hcuayahuitl@lincoln.ac.uk
 #############################################################################
 
+from re import S
 import sys  
 import numpy as np
 from causallearn.utils.cit import CIT, Chisq_or_Gsq
 from causallearn.utils.cit import Chisq_or_Gsq as Chisq_or_Gsq
+from causallearn.utils.cit import MV_FisherZ as MV_FisherZ
+from causallearn.utils.cit import MC_FisherZ as MC_FisherZ
+
 
 # from CIT import Chisq_or_Gsq, FisherZ
 
@@ -47,13 +51,13 @@ class ConditionalIndependence:
             self.chisq_obj = Chisq_or_Gsq(data, self.test)
         else:
             raise NotImplementedError('Continuous data not yet supported')
-            # self.chisq_obj = CIT(data, self.test)
+            # self.chisq_obj = MV_FisherZ(np.array(data))
 
     def read_data(self, data_file):
         ## print("\nREADING data file %s..." % (data_file))
         ## print("---------------------------------------")
 
-        with open(data_file) as csv_file:
+        with open(data_file, encoding='utf-8') as csv_file:
             for line in csv_file:
                 line = line.strip()
                 if len(self.rand_vars) == 0:

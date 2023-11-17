@@ -29,14 +29,22 @@ from ModelEvaluator import ModelEvaluator
 
 
 class GaussianProcess():
-    noise = 0.4
-    mu = None # mean vector to be estimated
-    cov = None # covariance matrix to be estimated
-    predictions = [] # probabilities of test data points
-    running_time = None # execution time for training+test
-    baseline_variant1 = False # use baseline discussed in lecture
 
-    def __init__(self, datafile_train, datafile_test):
+    def __init__(
+            self, 
+            datafile_train,
+            datafile_test,
+            noise = 0.4,
+            mu = None,
+            cov = None,
+        ):
+        self.noise = 0.4
+        self.mu = None # mean vector to be estimated
+        self.cov = None # covariance matrix to be estimated
+        self.predictions = [] # probabilities of test data points
+        self.running_time = None # execution time for training+test
+        self.baseline_variant1 = False # use baseline discussed in lecture
+        
         # Load training and test data from two separate CVS files
         X_train, Y_train = self.loadCVSFile(datafile_train)
         X_test, Y_test = self.loadCVSFile(datafile_test)
@@ -52,7 +60,7 @@ class GaussianProcess():
         X = []
         Y = []
         start_reading = False
-        with open(fileName) as f:
+        with open(fileName, encoding='utf-8') as f:
             lines = f.readlines()
             for line in lines:
                 line = line.strip()
@@ -65,17 +73,18 @@ class GaussianProcess():
                     Y.append(values[len(values)-1:])
         return np.asarray(X), np.asarray(Y)
 
-    def estimate_mean_and_covariance(self, X_train, Y_train, X_test):
+    def estimate_mean_and_covariance(self, X_train, Y_train, X_test, l_opt=None, sigma_f_opt=None):
         print("ESTIMATING mean and covariance for GP model...")
 
         # search for optimal values for l and sigma_f via negative log-likelihood
         # and the Limited-memory BGGS-B algorithm. The latter isan extension of 
         # the L-BFGS algorithm used for hyperparameter optimisation
-        res = minimize(nll_fn(X_train, Y_train, self.noise, False), [1, 1], 
-                       bounds=((1e-5, None), (1e-5, None)), method='L-BFGS-B')
-        l_opt, sigma_f_opt = res.x
-
-        print("Hyperparameters: l=%s sigma=%s noise=%s" % (l_opt, sigma_f_opt, self.noise))
+        
+        if l_opt is None or sigma_f_opt is None:
+            res = minimize(nll_fn(X_train, Y_train, self.noise, False), [1, 1], 
+                        bounds=((1e-5, None), (1e-5, None)), method='L-BFGS-B')
+            l_opt, sigma_f_opt = res.x
+            print("Hyperparameters: l=%s sigma=%s noise=%s" % (l_opt, sigma_f_opt, self.noise))
 		
         # Compute posterior mean and covariance using optimised kernel parameters
         self.mu, self.cov = posterior(X_test, X_train, Y_train, \

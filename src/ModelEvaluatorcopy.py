@@ -68,7 +68,7 @@ class ModelEvaluator(BayesNetInference):
         self.inference_time = time.time()
         true, pred, prob = self.get_true_and_predicted_targets(nb_tester)
         self.inference_time = time.time() - self.inference_time
-        self.computed_performance = self.compute_performance(nb_tester, true, pred, prob)
+        self.compute_performance(nb_tester, true, pred, prob)
         self.calculate_scoring_functions(nb_fitted)
 
     # calculates scores based on metrics Log Likelihood (LL) and
@@ -76,18 +76,23 @@ class ModelEvaluator(BayesNetInference):
     # LL with a penalty factor.
     def calculate_scoring_functions(self, nbc):
         if not self.bn: return
+        print("\nCALCULATING LL and BIC on training data...")
         LL = self.calculate_log_lilelihood(nbc)
         BIC = self.calculate_bayesian_information_criterion(LL, nbc)
+        print("LL score="+str(LL))
+        print("BIC score="+str(BIC))
 
     # calculates LL scores but only for Naive Bayes classifiers.
     # You need to provide support for this to work with Bayes nets,
     # see comment below for a hint on what is needed.
     def calculate_log_lilelihood(self, nbc):
         LL = 0
-        # print("\nCALCULATING LL on training data...")
 
         if self.useBayesNet:
-            # print("Extend if you want to use for Bayes Nets")
+            print("===============================================================")
+            print("WARNING: This method currently works for discrete Naive Bayes! ")
+            print(" You need to extend it to be able to work with Bayes nets.     ")
+            print("===============================================================")
             return None
  
         # iterates over all data points (instances) in the training data
@@ -116,14 +121,11 @@ class ModelEvaluator(BayesNetInference):
 			
             if self.verbose == True:
                 print("LL: %s -> %f" % (instance, LL))
-                
-        print("LL score="+str(LL))
+
         return LL
 
     def calculate_bayesian_information_criterion(self, LL, nbc):
-        # print("CALCULATING BIC on training data...")
         if LL is None:
-            # print("No LL so BIC can't be evaluated\n")
             return
 
         penalty = 0
@@ -133,11 +135,10 @@ class ModelEvaluator(BayesNetInference):
             penalty += local_penalty
 
         BIC = LL - penalty
-        print("BIC score="+str(BIC))
         return BIC
 
     def get_true_and_predicted_targets(self, nbc):
-        # print("\nCARRYING-OUT probabilistic inference on test data...")
+        print("\nCARRYING-OUT probabilistic inference on test data...")
         Y_true = []
         Y_pred = []
         Y_prob = []
@@ -217,6 +218,10 @@ class ModelEvaluator(BayesNetInference):
         P = np.asarray(Y_true)+0.00001 # constant to avoid NAN in KL divergence
         Q = np.asarray(Y_prob)+0.00001 # constant to avoid NAN in KL divergence
 
+        #print("Y_true="+str(Y_true))
+        #print("Y_pred="+str(Y_pred))
+        #print("Y_prob="+str(Y_prob))
+
         bal_acc = metrics.balanced_accuracy_score(Y_true, Y_pred)
         f1 = metrics.f1_score(Y_true, Y_pred)
         fpr, tpr, _ = metrics.roc_curve(Y_true, Y_prob, pos_label=1)
@@ -226,27 +231,25 @@ class ModelEvaluator(BayesNetInference):
 
         if nbc != None: 
             classifier_type = "Bayes net" if self.useBayesNet else "Naive Bayes" 
-            # print("\nCOMPUTING performance of %s on test data:" % ("classifier_type"))
-        # else:
-        #     print("\nCOMPUTING performance on test data...")
-        # try:
-        #     if nbc != None and not self.useBayesNet:
-        #         print("Training Time="+str(nbc.training_time)+" secs.")
-        #         print("Inference Time="+str(nbc.inference_time)+" secs.")
-        #     else:
-        #         print("Training Time=this number should come from the CPT_Generator!")
-        #         print("Inference Time="+str(self.inference_time)+" secs.")
-        # except Exception:
-        #     pass
-        
-        return {
-            'inference_time': self.inference_time,
-            'bal_acc': bal_acc,
-            'f1': f1,
-            'auc': auc,
-            'brier': brier,
-            'kl_div': kl_div,
-        }
+            print("\nCOMPUTING performance of %s on test data:" % ("classifier_type"))
+        else:
+            print("\nCOMPUTING performance on test data...")
+
+        print("Balanced Accuracy="+str(bal_acc))
+        print("F1 Score="+str(f1))
+        print("Area Under Curve="+str(auc))
+        print("Brier Score="+str(brier))
+        print("KL Divergence="+str(kl_div))
+		
+        try:
+            if nbc != None and not self.useBayesNet:
+                print("Training Time_NBC="+str(nbc.training_time)+" secs.")
+                print("Inference Time_NBC="+str(nbc.inference_time)+" secs.")
+            # else:
+                # print("Training Time=this number should come from the CPT_Generator!")
+                # print("Inference Time="+str(self.inference_time)+" secs.")
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":

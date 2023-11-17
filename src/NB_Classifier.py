@@ -61,8 +61,8 @@ class NB_Classifier:
             self.inference_time = time.time() - self.inference_time
 
     def read_data(self, data_file):
-        print("\nREADING data file %s..." % (data_file))
-        print("---------------------------------------")
+        # print("\nREADING data file %s..." % (data_file))
+        # print("---------------------------------------")
 
         self.rand_vars = []
         self.rv_key_values = {}
@@ -73,10 +73,11 @@ class NB_Classifier:
                 line = line.strip()
                 line = line.replace('ï»¿', '')
                 line = line.replace('∩╗┐', '')
+                line = line.replace('\\ufeff', '')
 
                 if len(self.rand_vars) == 0:
                     self.rand_vars = line.split(',')
-                    print("VARS="+str(self.rand_vars))
+                    # print("VARS="+str(self.rand_vars))
                     for variable in self.rand_vars:
                         self.rv_key_values[variable] = []
                 else:
@@ -84,7 +85,7 @@ class NB_Classifier:
 
                     if len(self.rv_all_values) == 0:
                         self.continuous_inputs = self.check_datatype(values)
-                        print("self.continuous_inputs="+str(self.continuous_inputs))
+                        # print("self.continuous_inputs="+str(self.continuous_inputs))
 
                     if self.continuous_inputs is True:
                         values = [float(value) for value in values]
@@ -98,11 +99,11 @@ class NB_Classifier:
 
         self.predictor_variable = self.rand_vars[len(self.rand_vars)-1]
 
-        print("RANDOM VARIABLES=%s" % (self.rand_vars))
-        print("VARIABLE KEY VALUES=%s" % (self.rv_key_values))
-        print("VARIABLE VALUES (first 10)=%s" % (self.rv_all_values[:10]))
-        print("PREDICTOR VARIABLE=%s" % (self.predictor_variable))
-        print("|data instances|=%d" % (self.num_data_instances))
+        # print("RANDOM VARIABLES=%s" % (self.rand_vars))
+        # print("VARIABLE KEY VALUES=%s" % (self.rv_key_values))
+        # print("VARIABLE VALUES (first 10)=%s" % (self.rv_all_values[:10]))
+        # print("PREDICTOR VARIABLE=%s" % (self.predictor_variable))
+        # print("|data instances|=%d" % (self.num_data_instances))
 
     def standardise_data(self, X, datafile):
         print("NORMALISING inputs of datafile=%s..." % (datafile))
