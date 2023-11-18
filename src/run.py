@@ -1,18 +1,22 @@
 import datetime
-from importlib.metadata import distribution
-import random
+import json
 import time
-# from sklearn.metrics import accuracy_score, balanced_accuracy_score
-# from pgmpy import config
-from py import test
-from scipy import rand
+
+import random
+import numpy as np
+from pgmpy import config
+from sympy import plot
+
 from tqdm import tqdm
+from colorama import Fore, Back, Style
+
 import utils
 import os
 from matplotlib import pyplot as plt
 import networkx as nx
 from sklearn import metrics
 import pandas as pd
+from multiprocessing import Pool    
 
 from pcstable import PCStable as pcs
 from CPT_Generator import CPT_Generator
@@ -21,6 +25,8 @@ from BayesNetInference import BayesNetInference as bni
 from ModelEvaluator import ModelEvaluator as me
 
 run_path = os.path.dirname(os.path.realpath(__file__))
+colour_dict = {'red': Fore.RED, 'green': Fore.GREEN, 'yellow': Fore.YELLOW, 'blue': Fore.BLUE, 'magenta': Fore.MAGENTA, 'cyan': Fore.CYAN, 'white': Fore.WHITE}
+colour = random.choice(list(colour_dict.keys()))
 
 def get_naive_bayes_struct(data_train: str,input_data_name, data_test: str, target_value: str):
     # data_train = 'data/diabetes_data-discretized-train.csv'
@@ -42,7 +48,7 @@ def get_naive_bayes_struct(data_train: str,input_data_name, data_test: str, targ
 
 def get_pc_stable_structure(data_train, insert_dataset_name, method='chisq', independence_threshold=0.05):
     pcs_test = pcs(data_train, method, independence_threshold)
-    pcs_test.evaluate_skeleton(with_plots= False,log_level=1)
+    pcs_test.evaluate_skeleton(with_plots= False,log_level=0)
     # pcs_test.evaluate_immoralities()
     # pcs_test.create_directional_edge_using_immorality()
     
@@ -65,12 +71,10 @@ def find_best_pc_structure(data_train, insert_file_name, method='chisq', indepen
     pcs_test = pcs(data_train, method, independence_threshold)
     pcs_test.evaluate_skeleton(with_plots= False,log_level=1)
     
-    pbar = tqdm(total=max_iterations)
+    pbar = tqdm(total=max_iterations, bar_format="{l_bar}%s{bar}%s{r_bar}" % (colour_dict[colour], Style.RESET_ALL))
     pbar.set_description(f'Evaluating PC using {method} with independence threshold {independence_threshold}')
-    # randomising colour for pbar 
-    colour = random.choice(['red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white'])
-    pbar.format_meter(0, max_iterations, 0, colour=colour)
-                      
+    # randomising colour for pbar     colour = random.choice(['red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white'])
+
     while(iteration < max_iterations):
         start_time = time.time()
         rand_dag = pcs_test.randomised_directed_graph()
@@ -92,18 +96,90 @@ def find_best_pc_structure(data_train, insert_file_name, method='chisq', indepen
             'config_path': config_path,
             'rand_dag_time': rand_dag_time,
             'cpt_generator_time': cpt_generator_time,
+            'iteration': iteration,
         }
         
         if computed_performance['bal_acc'] > best_accuracy:
                 best_accuracy = computed_performance['bal_acc']
                 best_structure = evaluation_data
+                print('-----------------')
+                print('New Best Structure')
+                print('Accuracy:', best_accuracy)
+                print(best_structure)
                 structures.append(evaluation_data)
         
         iteration += 1
         pbar.update(1)
         pbar.set_postfix_str(f'Best Accuracy: {best_accuracy}')
     return structures
-# {'best_accuracy': best_accuracy, 'best_structure': best_structure, 'best_config_path': best_config_path}
+
+def evaluate_effect_of_changing_independence_val(data_train, method='chisq', 
+                                                ind_thresh_min=0.04, ind_thresh_max=0.05, iterations_per_thresh=5,
+                                                threshold_increment=0.005):
+    if ind_thresh_min > ind_thresh_max:
+        raise ValueError('ind_thresh_min must be less than ind_thresh_max')
+    
+    total_array_size = int((ind_thresh_max - ind_thresh_min) / threshold_increment) * iterations_per_thresh
+    plot_data = {} 
+    plot_data['training_data'] = data_train
+    plot_data['method'] = method
+    plot_data['threshold_min'] = ind_thresh_min
+    plot_data['threshold_maxx'] = ind_thresh_max
+    plot_data['independence_threshold'] = {}
+    threshold = ind_thresh_min
+    now = datetime.datetime.now()
+    generation_started_at = now.strftime("%m-%d_%H:%M:%S%f") + now.strftime("%f")[:1]
+    file_name = str(f'independence-evaluation-{method}-{generation_started_at}.txt')
+    # pcs_test = {}
+
+    pbar = tqdm(total=total_array_size, bar_format="{l_bar}%s{bar}%s{r_bar}" % (colour_dict[colour], Style.RESET_ALL))
+    for i in range(int((ind_thresh_max - ind_thresh_min) / threshold_increment)): # 
+        print(i)
+        pbar.set_description(f'Getting data for {method} with independence threshold {threshold})')
+        plot_data['independence_threshold'][threshold] = []
+        pcs_test = pcs(data_train, method, threshold)
+        pcs_test.evaluate_skeleton(with_plots= False,log_level=1)
+        for j in range(iterations_per_thresh):
+            print(j)
+            
+            start_time = time.time()
+            #FIXME: THIS IS STUCK IN SOME LOOP FOR SOME REASON
+            rand_dag = pcs_test.randomised_directed_graph()
+            rand_dag_time = time.time() - start_time
+            
+            data = utils.topological_sort_for_structure(rand_dag)
+            config_path = utils.config_structure_file(data, 'metrics-configs/effect-of-independence-overwritable-structure', 'best-structure')
+            
+            start_time = time.time()
+            CPT_Generator(config_path, train_data)
+            cpt_generator_time = time.time() - start_time
+            
+            evaluator = me(config_path, train_data, test_data)
+            computed_performance = evaluator.computed_performance
+            
+            plot_data['independence_threshold'][threshold].append({
+                'method': method,
+                'time_generated': int(datetime.datetime.now().timestamp()),
+                'balanced_accuracy': computed_performance['bal_acc'],
+                'f1_score': computed_performance['f1'],
+                'brier_score': computed_performance['brier'],
+                'kl_divergence': computed_performance['kl_div'],
+                'area_under_curve': computed_performance['auc'],
+                'structure': data,
+                'config_path': config_path,
+                'rand_dag_time': rand_dag_time,
+                'cpt_generator_time': cpt_generator_time,
+            })
+        threshold += threshold_increment
+        pcs_test = None
+        with open(f'metrics/{file_name}.json', 'a') as f:
+            json.dump(plot_data, f)
+    return plot_data
+
+def read_evaluation_data(file_name):
+    with open(file_name, 'r') as f:
+        data = json.load(f)
+    return data
     
 def nb_classifier(train_file, test_file):
     nb_fitted = nbc(train_file)
@@ -136,171 +212,98 @@ def rejection_sampling(config_file, prob_query, num_samples):
     )
     return rejection_sampling
 
-
-def evaluating_pc_stable(train_data, structure_name, method='chisq', independence_threshold=0.01, max_iterations=100):
-    best_structures = find_best_pc_structure(train_data, structure_name, method='gsq', independence_threshold=independence_threshold, max_iterations=max_iterations)
-    config_file = best_structures[-1]
-    cpt_generator_time = best_structures[-1]
-    print(config_file)
+def evaluating_pc_stable(train_data, structure_name, method, independence_threshold, max_iterations=100):
+    best_structures = find_best_pc_structure(train_data, structure_name, method, independence_threshold=independence_threshold, max_iterations=max_iterations)
     
-    # inference_query = "P(Outcome|Glucose=4,BMI=1,Age=5)"
-    # config_file = 'config/nb-cardiovascular-structure-run_test-11-16_12:09:49.txt' # Naive Bayes cardiovascular
+    config_file = best_structures[-1]["config_path"]
+    cpt_generator_time = best_structures[-1]["cpt_generator_time"]
     evaluator = me(config_file, train_data,test_data)
     computed_performance = evaluator.computed_performance
-    
-    print('\n')
-    print("------------------------------------------------------------")
-    print(f'Method: {method}')
-    print(f'Independence Threshold: {independence_threshold}')
-    print(f'Max Iterations: {max_iterations}')
-    print("------------------------------------------------------------")
-    print(f'**Config**: {config_file}')
-    print(f'Brier Score: {computed_performance["brier"]}')
-    print(f'KL Divergence: {computed_performance["kl_div"]}')
-    print(f'Training Time: {cpt_generator_time}')
-    print(f'Inference Time: {computed_performance["inference_time"]}')
-    print(f'Balanced Accuracy: {computed_performance["bal_acc"]}')
-    print(f'F1 Score: {computed_performance["f1"]}')
-    print(f'Area Under Curve: {computed_performance["auc"]}')
-    print("\n--------------------")
-    print(f'Structure: {best_structures[-1]["structure"]}')
-    print("\n--------------------")
-    with open(f'best_structures_{method}_{independence_threshold}-real.txt', 'w ') as f:
-        f.write('\n')
-        f.write("------------------------------------------------------------")
-        f.write(f'Method: {method}')
-        f.write(f'Independence Threshold: {independence_threshold}')
-        f.write(f'Max Iterations: {max_iterations}')
-        f.write("------------------------------------------------------------")
-        f.write(f'**Config**: {config_file}')
-        f.write(f'Brier Score: {computed_performance["brier"]}')
-        f.write(f'KL Divergence: {computed_performance["kl_div"]}')
-        f.write(f'Training Time: {cpt_generator_time}')
-        f.write(f'Inference Time: {computed_performance["inference_time"]}')
-        f.write(f'Balanced Accuracy: {computed_performance["bal_acc"]}')
-        f.write(f'F1 Score: {computed_performance["f1"]}')
-        f.write(f'Area Under Curve: {computed_performance["auc"]}')
-        f.write("\n--------------------")
-        f.write(f'Structure: {best_structures[-1]["structure"]}')
-        f.write("\n--------------------")
+    now = datetime.datetime.now()
+    generated_at = now.strftime("%m-%d_%H:%M:%S%f") + now.strftime("%f")[:3]
+    eval_data = f"""
+------------------------------------------------------------
+Method: {method}
+Independence Threshold: {independence_threshold}
+Max Iterations: {max_iterations}
+Iteration: {best_structures[-1]["iteration"]}
+Completed at: {generated_at}
+--------------------
+Config: {config_file}
+Brier Score: {computed_performance["brier"]}
+KL Divergence: {computed_performance["kl_div"]}
+Training Time: {cpt_generator_time}
+Inference Time: {computed_performance["inference_time"]}
+Balanced Accuracy: {computed_performance["bal_acc"]}
+F1 Score: {computed_performance["f1"]}
+Area Under Curve: {computed_performance["auc"]}
+--------------------
+Iteration: {best_structures[-1]["iteration"]}
+
+random_variables: {best_structures[-1]["structure"]["random_variables"]}
+
+structure: {best_structures[-1]["structure"]["structure"]}
+------------------------------------------------------------
+"""
+    print(eval_data)
+    file_name = str(f'best_structures-{structure_name}-{method}-{independence_threshold}.txt')
+    with open(file_name, 'a') as f:
+        f.write(eval_data)
     
     for i in range(5):
         if len(best_structures) == 0:
             break
-        print(best_structures.pop())
-
+        print(best_structures.pop())    
 
 if __name__ == "__main__":
-    # train_data = 'data/discreet/diabetes_data-discretized-train.csv'
-    # test_data = 'data/discreet/diabetes_data-discretized-test.csv'
-    train_data = 'data/discreet/cardiovascular_data-discretized-train.csv'
-    test_data = 'data/discreet/cardiovascular_data-discretized-test.csv'
-    # config_file = 'config/pc-automated/config-pc-diabetes-structure-best-structure-11-16_01:24:08.txt'
-    structure_name = 'cardiovascular-discrete'
-    target_value = 'target'
+    #### Diabetes Data
+    train_data = 'data/discreet/diabetes_data-discretized-train.csv'
+    test_data = 'data/discreet/diabetes_data-discretized-test.csv'
+    structure_name = 'diabetes-discrete'
+    target_value = 'Outcome'
+    config_file = 'config/pc-automated/config-pc-cardiovascular-discrete-structure-best-structure-11-17_13:01:48.txt'
+
     
-    # evaluating_pc_stable(train_data, structure_name, method='chisq', independence_threshold=0.01, max_iterations=20)
-    evaluating_pc_stable(train_data, structure_name, method='chisq', independence_threshold=0.05, max_iterations=20)
-    # evaluating_pc_stable(train_data, structure_name, method='gsq', independence_threshold=0.01, max_iterations=20)
-    # evaluating_pc_stable(train_data, structure_name, method='gsq', independence_threshold=0.05, max_iterations=20)
-    # evaluating_pc_stable(train_data, structure_name, method='chisq', independence_threshold=0.01, max_iterations=20)
-    # evaluating_pc_stable(train_data, structure_name, method='chisq', independence_threshold=0.05, max_iterations=20)
-    # evaluating_pc_stable(train_data, structure_name, method='gsq', independence_threshold=0.01, max_iterations=20)
-    # evaluating_pc_stable(train_data, structure_name, method='gsq', independence_threshold=0.05, max_iterations=20)
+    #### Cardiovascular Data
+    # train_data = 'data/discreet/cardiovascular_data-discretized-train.csv'
+    # test_data = 'data/discreet/cardiovascular_data-discretized-test.csv'
+    # structure_name = 'cardiovascular-discrete'
+    # target_value = 'target'
+
     
-    # #############################
-    # #### Structure Generator ####
-    # #############################
+    # #####################################
+    # #### Finding the Best Structure  ####
+    # #####################################
+    
     # config_file = get_naive_bayes_struct(train_data,structure_name,test_data,target_value)
-    # config_file = get_pc_stable_structure(train_data, structure_name, method='fisherz', independence_threshold=0.05)
+    # evaluating_pc_stable(train_data, structure_name, method='chisq', independence_threshold=0.01, max_iterations=50)
     
-    # get_metrics(train_data, 'cardiovascular', max_iterations=100)
-    # best = find_best_pc_structure(train_data, 'cardiovascular-discrete', method='chisq', independence_threshold=0.05, max_iterations=1000)
-    # 'config/pc-automated/config-pc-diabetes-structure-best-structure-11-16_01:30:09.txt'
-    # 'config/pc-automated/config-pc-diabetes-structure-best-structure-11-16_01:30:09.txt' 0.70 
-    # {'best_accuracy': 0.7, 'best_structure': {'random_variables': 'BloodPressure(BloodPressure);SkinThickness(SkinThickness);Age(Age);Insulin(Insulin);BMI(BMI);Pregnancies(Pregnancies);Glucose(Glucose);Outcome(Outcome)', 'structure': 'P(BloodPressure);P(SkinThickness);P(Age|BloodPressure);P(Insulin|SkinThickness);P(BMI|BloodPressure,SkinThickness);P(Pregnancies|BloodPressure,SkinThickness,Age);P(Glucose|Insulin);P(Outcome|Glucose)'}, 'best_config_path': 'config/pc-automated/config-pc-diabetes-structure-best-structure-11-16_01:30:09.txt', 'rand_dag_time': 0.00015664100646972656, 'cpt_generator_time': 0.039079904556274414}
+    ###############################################
+    ###### Config Structure File Evaluation #######
+    ###############################################
+    
+    start_time = time.time()
+    CPT_Generator(config_file, train_data)
+    cpt_generator_time = time.time() - start_time    
+    
+    evaluator = me(None, train_data,test_data)
+    computed_performance = evaluator.computed_performance
+    print("------------------------------------------------------------")
+    print('**Config**:', config_file)
+    print('Training Time:', cpt_generator_time)
+    print('Inference Time:', computed_performance['inference_time'])
+    print('Balanced Accuracy:', computed_performance['bal_acc'])
+    print('F1 Score:', computed_performance['f1'])
+    print('Area Under Curve:', computed_performance['auc'])
+    print('Brier Score:', computed_performance['brier'])
+    print('KL Divergence:', computed_performance['kl_div'])
+    print("\n--------------------")
         
-    # print('\n\n\nBEST STRUCTURE---')
-    # print('best_accuracy:', best['best_accuracy'])
-    # print('best_structure:', best['best_structure'])
-    # print('best_config_path:', best['best_config_path'])
-    # print('best_config_path:', best['rand_dag_time'])
-    # print('rand_dag_time:', best['cpt_generator_time'])
-    
     #############################
-    ###### CPT Generator ########
-    #############################
-    # config_file = 'config/pc-automated/config-pc-diabetes-structure-best-structure-11-16_22:32:00.txt'
-    # start_time = time.time()
-    # CPT_Generator(config_file, train_data)
-    # cpt_generator_time = time.time() - start_time
-    
-    
-    # # run_nb_classifier = nb_classifier(train_data, test_data)
-    # # ## print(run_nb_classifier.estimate_probabilities)
-    
-    
-    # #############################
-    # ###### Model Evaluator ######
-    # #############################
-    
-    
-    
-    # best_structure, best_structures = find_best_pc_structure(train_data, structure_name, method='gsq', independence_threshold=0.05, max_iterations=10000)
-    # config_file = best_structure['config_path']
-    # cpt_generator_time = best_structure['cpt_generator_time']
-    # print(config_file)
-    
+    ###### Run Inference ########
+    #############################    
     # inference_query = "P(Outcome|Glucose=4,BMI=1,Age=5)"
-    # # config_file = 'config/nb-cardiovascular-structure-run_test-11-16_12:09:49.txt' # Naive Bayes cardiovascular
-    # evaluator = me(config_file, train_data,test_data)
-    # computed_performance = evaluator.computed_performance
-    # print("------------------------------------------------------------")
-    # print('**Config**:', config_file)
-    # print('Training Time:', cpt_generator_time)
-    # print('Inference Time:', computed_performance['inference_time'])
-    # print('Balanced Accuracy:', computed_performance['bal_acc'])
-    # print('F1 Score:', computed_performance['f1'])
-    # print('Area Under Curve:', computed_performance['auc'])
-    # print('Brier Score:', computed_performance['brier'])
-    # print('KL Divergence:', computed_performance['kl_div'])
-    # print("\n--------------------")
     
-    # print(best_structures.pop())
-    # print(best_structures.pop())
-    # print(best_structures.pop())
-    # print(best_structures.pop())
-    # print(best_structures.pop())
-        
-        
-    # best_structure, best_structures = find_best_pc_structure(train_data, structure_name, method='gsq', independence_threshold=0.05, max_iterations=10000)
-    # config_file = best_structure['config_path']
-    # cpt_generator_time = best_structure['cpt_generator_time']
-    # print(config_file)
-    
-    # inference_query = "P(Outcome|Glucose=4,BMI=1,Age=5)"
-    # # config_file = 'config/nb-cardiovascular-structure-run_test-11-16_12:09:49.txt' # Naive Bayes cardiovascular
-    # evaluator = me(config_file, train_data,test_data)
-    # computed_performance = evaluator.computed_performance
-    # print("------------------------------------------------------------")
-    # print('**Config**:', config_file)
-    # print('Training Time:', cpt_generator_time)
-    # print('Inference Time:', computed_performance['inference_time'])
-    # print('Balanced Accuracy:', computed_performance['bal_acc'])
-    # print('F1 Score:', computed_performance['f1'])
-    # print('Area Under Curve:', computed_performance['auc'])
-    # print('Brier Score:', computed_performance['brier'])
-    # print('KL Divergence:', computed_performance['kl_div'])
-    # print("\n--------------------")
-    
-    # print(best_structures.pop())
-    # print(best_structures.pop())
-    # print(best_structures.pop())
-    # print(best_structures.pop())
-    # print(best_structures.pop())
-        
-    
-    # # # # we can only run an inference method with parents of the variable we are interested in?
     # print("**Query**:", inference_query)
     # exact_inference = bayes_net_exact_inference(config_file, inference_query, 1000)   
     # rej = rejection_sampling(config_file, inference_query, 1000)
@@ -310,23 +313,4 @@ if __name__ == "__main__":
     # print("\n------------------------------------------------------------")
 
 
-    # exact_inference = bayes_net_exact_inference(config_file, "P(Outcome|Glucose=2,BMI=2,Age=2)", 1000)   
-
-    
-    # # # gauss_proc = gaussian_process('data/diabetes_data-original-train.csv', 'data/diabetes_data-original-test.csv')
-    
-    # # rej = rejection_sampling('config/config-alarm.txt', "P(B|J=true,M=true)", 100)
-    
-    
-    
-    
-    
-    ################################
-    ###### Gaussian Processes ######
-    ################################
-    
-    
-    ## print('end')
-
-    
     
