@@ -1,0 +1,19 @@
+
+------------------------------------------------------------
+Method: chisq
+Independence Threshold: 0.05
+Max Iterations: 20
+Completed at: 11-17_19:30:27986423986
+------------------------------------------------------------
+Config: config/pc-automated/config-pc-diabetes-discrete-structure-best-structure-11-17_19:30:27.txt
+Brier Score: 0.1514764142976232
+KL Divergence: 38.964438184563335
+Training Time: {'balanced_accuracy': 0.759090909090909, 'structure': {'random_variables': 'BloodPressure(BloodPressure);Age(Age);Insulin(Insulin);Pregnancies(Pregnancies);Glucose(Glucose);SkinThickness(SkinThickness);BMI(BMI);Outcome(Outcome)', 'structure': 'P(BloodPressure);P(Age);P(Insulin);P(Pregnancies|BloodPressure,Age);P(Glucose|Insulin);P(SkinThickness|Pregnancies,Insulin);P(BMI|BloodPressure,SkinThickness);P(Outcome|Glucose,BMI)'}, 'config_path': 'config/pc-automated/config-pc-diabetes-discrete-structure-best-structure-11-17_19:30:27.txt', 'rand_dag_time': 8.749961853027344e-05, 'cpt_generator_time': 0.0046918392181396484, 'iteration': 1}
+Inference Time: 0.005247592926025391
+Balanced Accuracy: 0.7363636363636363
+F1 Score: 0.6464646464646464
+Area Under Curve: 0.8382644628099174
+--------------------
+Structure: {'random_variables': 'BloodPressure(BloodPressure);Age(Age);Insulin(Insulin);Pregnancies(Pregnancies);Glucose(Glucose);SkinThickness(SkinThickness);BMI(BMI);Outcome(Outcome)', 'structure': 'P(BloodPressure);P(Age);P(Insulin);P(Pregnancies|BloodPressure,Age);P(Glucose|Insulin);P(SkinThickness|Pregnancies,Insulin);P(BMI|BloodPressure,SkinThickness);P(Outcome|Glucose,BMI)'}
+Iteration: 1
+------------------------------------------------------------

@@ -1,0 +1,42 @@
+
+------------------------------------------------------------
+Method: chisq
+Independence Threshold: 0.05
+Max Iterations: 20
+Iteration: 3
+Completed at: 11-17_19:37:17116752116
+------------------------------------------------------------
+Config: config/pc-automated/config-pc-diabetes-discrete-structure-best-structure-11-17_19:37:16.txt
+Brier Score: 0.14514287038458995
+KL Divergence: 38.43759192072612
+Training Time: 0.007280111312866211
+Inference Time: 0.008469343185424805
+Balanced Accuracy: 0.740909090909091
+F1 Score: 0.6534653465346534
+Area Under Curve: 0.8604132231404958
+--------------------
+random_variables: Glucose(Glucose);BMI(BMI);Insulin(Insulin);BloodPressure(BloodPressure);Outcome(Outcome);SkinThickness(SkinThickness);Pregnancies(Pregnancies);Age(Age)
+random_variables: P(Glucose);P(BMI);P(Insulin|Glucose);P(BloodPressure|BMI);P(Outcome|Glucose,BMI);P(SkinThickness|Insulin,BMI);P(Pregnancies|BloodPressure,SkinThickness);P(Age|Pregnancies)
+Iteration: 3
+------------------------------------------------------------
+
+------------------------------------------------------------
+Method: chisq
+Independence Threshold: 0.05
+Max Iterations: 1000
+Iteration: 2
+Completed at: 11-17_19:38:15826299826
+------------------------------------------------------------
+Config: config/pc-automated/config-pc-diabetes-discrete-structure-best-structure-11-17_19:37:52.txt
+Brier Score: 0.15270322851009688
+KL Divergence: 38.19847262094691
+Training Time: 0.020525217056274414
+Inference Time: 0.010714530944824219
+Balanced Accuracy: 0.759090909090909
+F1 Score: 0.6788990825688074
+Area Under Curve: 0.8305785123966942
+--------------------
+random_variables: BloodPressure(BloodPressure);Age(Age);Glucose(Glucose);Insulin(Insulin);SkinThickness(SkinThickness);Pregnancies(Pregnancies);BMI(BMI);Outcome(Outcome)
+random_variables: P(BloodPressure);P(Age);P(Glucose);P(Insulin|Glucose);P(SkinThickness|Insulin);P(Pregnancies|BloodPressure,SkinThickness,Age);P(BMI|BloodPressure,SkinThickness);P(Outcome|Glucose,BMI)
+Iteration: 2
+------------------------------------------------------------

@@ -41,10 +41,14 @@ from BayesNetInference import BayesNetInference
 
 class ModelEvaluator(BayesNetInference):
     verbose = False 
-    useBayesNet = True # False uses NaiveBayes, True uses BayesNet
+    useBayesNet = False # False uses NaiveBayes, True uses BayesNet
     inference_time = None
 
     def __init__(self, configfile_name, datafile_train, datafile_test):
+        if configfile_name == None: 
+            configfile_name = 'None'
+        # if configfile_name == 'None' and useBayesNet == True:
+            self.useBayesNet = True
         if os.path.isfile(configfile_name):
             # loads Bayesian network stored in configfile_name, where
             # the None arguments prevent any inference at this time
@@ -69,7 +73,7 @@ class ModelEvaluator(BayesNetInference):
         true, pred, prob = self.get_true_and_predicted_targets(nb_tester)
         self.inference_time = time.time() - self.inference_time
         self.computed_performance = self.compute_performance(nb_tester, true, pred, prob)
-        self.calculate_scoring_functions(nb_fitted)
+        # self.calculate_scoring_functions(nb_fitted)
 
     # calculates scores based on metrics Log Likelihood (LL) and
     # Bayesian Information Criterion (BIC). Note that BIC extends 
@@ -223,21 +227,27 @@ class ModelEvaluator(BayesNetInference):
         auc = metrics.auc(fpr, tpr)
         brier = metrics.brier_score_loss(Y_true, Y_prob)
         kl_div = np.sum(P*np.log(P/Q))
-
+        
+        # print("| Balanced Accuracy | "+str(bal_acc)+'| | | | |')
+        # print("| F1 score | "+str(f1)+'| | | | |')
+        # print("| AUC |"+str(auc)+'| | | | |')
+        # print("| Brier score | "+str(brier)+'| | | | |')
+        # print("| KL divergence | "+str(kl_div)+'| | | | |')
+        
         if nbc != None: 
             classifier_type = "Bayes net" if self.useBayesNet else "Naive Bayes" 
-            # print("\nCOMPUTING performance of %s on test data:" % ("classifier_type"))
-        # else:
-        #     print("\nCOMPUTING performance on test data...")
-        # try:
-        #     if nbc != None and not self.useBayesNet:
-        #         print("Training Time="+str(nbc.training_time)+" secs.")
-        #         print("Inference Time="+str(nbc.inference_time)+" secs.")
-        #     else:
-        #         print("Training Time=this number should come from the CPT_Generator!")
-        #         print("Inference Time="+str(self.inference_time)+" secs.")
-        # except Exception:
-        #     pass
+            print("\nCOMPUTING performance of %s on test data:" % ("classifier_type"))
+        else:
+            print("\nCOMPUTING performance on test data...")
+        try:
+            if nbc != None and not self.useBayesNet:
+                print("Training Time="+str(nbc.training_time)+" secs.")
+                print("Inference Time="+str(nbc.inference_time)+" secs.")
+            else:
+                print("Training Time=this number should come from the CPT_Generator!")
+                print("Inference Time="+str(self.inference_time)+" secs.")
+        except Exception:
+            pass
         
         return {
             'inference_time': self.inference_time,

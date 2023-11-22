@@ -325,24 +325,28 @@ structure: {best_structures[-1]["structure"]["structure"]}
 
 if __name__ == "__main__":
     #### Diabetes Data
-    # train_data = 'data/discreet/diabetes_data-discretized-train.csv'
-    # test_data = 'data/discreet/diabetes_data-discretized-test.csv'
-    # structure_name = 'diabetes-discrete'
-    # target_value = 'Outcome'
+    train_data = "data/discreet/diabetes_data-discretized-train.csv"
+    test_data = "data/discreet/diabetes_data-discretized-test.csv"
+    structure_name = "diabetes-discrete"
+    target_value = "Outcome"
 
-    # config_file = 'config/structure-learn/config-nb-diabetes-structure-run_test-11-15_17:36:25.txt' # Naive Bayes
-    # config_file = 'config/pc-automated/config-pc-diabetes-structure-best-structure-11-16_16:58:08.txt' # Chisq 0.05
+    # config_file = "config/structure-learn/config-nb-diabetes-structure-run_test-11-15_17:36:25.txt"  # Naive Bayes
+    # config_file = "config/pc-automated/config-pc-diabetes-structure-best-structure-11-16_16:58:08.txt"  # Chisq 0.05
     # config_file = '' # Chisq 0.01
-    # config_file = 'config/pc-automated/config-pc-diabetes-structure-best-structure-11-16_17:46:58-best.txt' # Gsq 0.05
+    # config_file = "config/pc-automated/config-pc-diabetes-structure-best-structure-11-16_17:46:58-best.txt"  # Gsq 0.05
     # config_file = '' # Gsq 0.01
 
     #### Cardiovascular Data
-    train_data = "data/discreet/cardiovascular_data-discretized-train.csv"
-    test_data = "data/discreet/cardiovascular_data-discretized-test.csv"
-    structure_name = "pc-chisq-0.01-cardiovascular-discrete"
-    target_value = "target"
+    # train_data = "data/discreet/cardiovascular_data-discretized-train.csv"
+    # test_data = "data/discreet/cardiovascular_data-discretized-test.csv"
+    # structure_name = "pc-chisq-0.01-cardiovascular-discrete"
+    # target_value = "target"
 
-    # config_file = 'config/nb-cardiovascular-structure.txt' # Naive Bayes
+    # config_file = "config/nb-cardiovascular-structure.txt"  # Naive Bayes
+    # config_file = "config/pc-automated/config-pc-pc-chisq-0.05-cardiovascular-discrete-structure-best-structure-11-18_20:03:24.txt"  # chi 0.05
+    # config_file = "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-5-structure-best-structure-11-18_21:27:07.txt"  # chi 0.01
+    # config_file = "config/pc-automated/config-pc-cardiovascular-discrete-structure-best-structure-11-17_13:42:53.txt"  # gsq 0.05
+    # config_file = "config/pc-automated/config-pc-cardiovascular-discrete-structure-best-structure-11-17_13:01:48.txt"  # gsq 0.01
 
     # config_file = '' # Chisq 0.05 - copilot
     # config_file = '' # Chisq 0.01
@@ -350,6 +354,18 @@ if __name__ == "__main__":
     # config_file = 'config/pc-automated/config-pc-cardiovascular-discrete-structure-best-structure-11-17_13:01:48.txt' gsq 0.01
 
     # config_file = get_naive_bayes_struct(train_data,structure_name,test_data,target_value) ??
+
+    #####################################
+    ###### Just running PC stable #######
+    #####################################
+
+    pcs_test = pcs(train_data, "chisq", 0.05)
+    pcs_test.evaluate_skeleton(with_plots=False, log_level=2)
+    # pcs_test.evaluate_immoralities()
+    # pcs_test.create_directional_edge_using_immorality()
+    rand_dag = pcs_test.randomised_directed_graph()
+    nx.draw_shell(rand_dag, with_labels=True)
+    plt.show()
 
     # #####################################
     # #### Finding the Best Structure  ####
@@ -370,91 +386,35 @@ if __name__ == "__main__":
     ###### Config Structure File Evaluation #######
     ###############################################
 
-    config_files = [
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-0-structure-best-structure-11-18_21:27:07.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-1-structure-best-structure-11-18_21:27:07.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-2-structure-best-structure-11-18_21:27:07.txt", # forever to run
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-3-structure-best-structure-11-18_21:27:07.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-4-structure-best-structure-11-18_21:27:07.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-5-structure-best-structure-11-18_21:27:07.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-6-structure-best-structure-11-18_21:27:07.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-7-structure-best-structure-11-18_21:27:07.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-8-structure-best-structure-11-18_21:27:08.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-9-structure-best-structure-11-18_21:27:08.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-10-structure-best-structure-11-18_21:27:08.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-11-structure-best-structure-11-18_21:27:08.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-12-structure-best-structure-11-18_21:27:08.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-13-structure-best-structure-11-18_21:27:08.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-14-structure-best-structure-11-18_21:27:08.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-15-structure-best-structure-11-18_21:27:09.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-16-structure-best-structure-11-18_21:27:09.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-17-structure-best-structure-11-18_21:27:09.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-18-structure-best-structure-11-18_21:27:09.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-19-structure-best-structure-11-18_21:27:09.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-20-structure-best-structure-11-18_21:27:09.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-21-structure-best-structure-11-18_21:27:09.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-22-structure-best-structure-11-18_21:27:09.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-23-structure-best-structure-11-18_21:27:10.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-24-structure-best-structure-11-18_21:27:10.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-25-structure-best-structure-11-18_21:27:10.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-26-structure-best-structure-11-18_21:27:10.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-27-structure-best-structure-11-18_21:27:10.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-28-structure-best-structure-11-18_21:27:10.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-29-structure-best-structure-11-18_21:27:10.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-30-structure-best-structure-11-18_21:27:11.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-31-structure-best-structure-11-18_21:27:11.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-32-structure-best-structure-11-18_21:27:11.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-33-structure-best-structure-11-18_21:27:11.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-34-structure-best-structure-11-18_21:27:11.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-35-structure-best-structure-11-18_21:27:11.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-36-structure-best-structure-11-18_21:27:11.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-37-structure-best-structure-11-18_21:27:12.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-38-structure-best-structure-11-18_21:27:12.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-39-structure-best-structure-11-18_21:27:12.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-40-structure-best-structure-11-18_21:27:12.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-41-structure-best-structure-11-18_21:27:12.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-42-structure-best-structure-11-18_21:27:12.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-43-structure-best-structure-11-18_21:27:12.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-44-structure-best-structure-11-18_21:27:12.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-45-structure-best-structure-11-18_21:27:12.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-46-structure-best-structure-11-18_21:27:12.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-47-structure-best-structure-11-18_21:27:12.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-48-structure-best-structure-11-18_21:27:13.txt",
-        # "config/pc-automated/config-pc-pc-chisq-0.01-cardiovascular-discrete-49-structure-best-structure-11-18_21:27:13.txt",
-    ]
+    # start_time = time.time()
+    # CPT_Generator(config_file, train_data)
+    # cpt_generator_time = time.time() - start_time
 
-    best = 0
-    for ind, config_file in enumerate(config_files):
-        print(f"{ind} / {len(config_files)}")
-        start_time = time.time()
-        CPT_Generator(config_file, train_data)
-        cpt_generator_time = time.time() - start_time
-
-        evaluator = me(None, train_data, test_data)
-        computed_performance = evaluator.computed_performance
-        print("------------------------------------------------------------")
-        print("**Config**:", config_file)
-        print("Training Time:", cpt_generator_time)
-        print("Inference Time:", computed_performance["inference_time"])
-        print("Balanced Accuracy:", computed_performance["bal_acc"])
-        print("F1 Score:", computed_performance["f1"])
-        print("Area Under Curve:", computed_performance["auc"])
-        print("Brier Score:", computed_performance["brier"])
-        print("KL Divergence:", computed_performance["kl_div"])
-        print("\n--------------------")
-
-        if computed_performance["bal_acc"] > best:
-            best = computed_performance["bal_acc"]
-            best_config = config_file
-
-    print("Best Config:", best_config)
-    print("Best Balanced Accuracy:", best)
+    # evaluator = me(config_file, train_data, test_data)
+    # computed_performance = evaluator.computed_performance
+    # print("------------------------------------------------------------")
+    # print("**Config**:", config_file)
+    # # print("Training Time:", cpt_generator_time)
+    # print("Inference Time:", computed_performance["inference_time"])
+    # print("Balanced Accuracy:", computed_performance["bal_acc"])
+    # print("F1 Score:", computed_performance["f1"])
+    # print("Area Under Curve:", computed_performance["auc"])
+    # print("Brier Score:", computed_performance["brier"])
+    # print("KL Divergence:", computed_performance["kl_div"])
+    # print("\n--------------------")
 
     #############################
     ###### Run Inference ########
     #############################
-    # inference_query = "P(Outcome|Glucose=4,BMI=1,Age=5)" # diabetes
-    # inference_query = "P(target|height=1,weight=5,ap_hi=2,ap_lo=2,gluc=1,smoke=0,alco=0)"# cardiovascular
+    # inference_query = "P(Outcome|Glucose=4,BMI=1,Age=5)"  # diabetes
+    # inference_query = "P(Outcome|Glucose=2,BMI=2,Age=2)"  # diabetes
+    # inference_query = "P(target|height=1,weight=5,ap_hi=2,ap_lo=2,gluc=1,smoke=0,alco=0)"  # cardiovascular
+    # inference_query = (
+    #     "P(target|height=2,weight=2,ap_hi=3,ap_lo=2,gluc=1,smoke=0,alco=0)"
+    # )
+    # inference_query = (
+    #     "P(target|height=4,weight=2,ap_hi=2,ap_lo=2,gluc=1,smoke=0,alco=0)"
+    # )
 
     # print("**Query**:", inference_query)
     # exact_inference = bayes_net_exact_inference(config_file, inference_query, 1000)

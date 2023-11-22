@@ -1,0 +1,42 @@
+{
+    "training_data": "data/discreet/diabetes_data-discretized-train.csv",
+    "method": "chisq",
+    "threshold_min": 0.04,
+    "threshold_maxx": 0.05,
+    "independence_threshold": {
+        "0.04": [
+            {
+                "method": "chisq",
+                "time_generated": 1700265079,
+                "balanced_accuracy": 0.7818181818181819,
+                "f1_score": 0.7068965517241379,
+                "brier_score": 0.14758977500650378,
+                "kl_divergence": 32.0568408686501,
+                "area_under_curve": 0.8565289256198347,
+                "structure": {
+                    "random_variables": "Insulin(Insulin);Outcome(Outcome);Glucose(Glucose);BMI(BMI);BloodPressure(BloodPressure);Pregnancies(Pregnancies);SkinThickness(SkinThickness);Age(Age)",
+                    "structure": "P(Insulin);P(Outcome);P(Glucose|Insulin,Outcome);P(BMI|Outcome);P(BloodPressure|BMI);P(Pregnancies|BloodPressure);P(SkinThickness|Pregnancies,Insulin,BMI);P(Age|Pregnancies,BloodPressure)"
+                },
+                "config_path": "config/metrics-configs/effect-of-independence-overwritable-structure-best-structure-11-17_23:51:16.txt",
+                "rand_dag_time": 1.191439151763916,
+                "cpt_generator_time": 1.3010079860687256
+            },
+            {
+                "method": "chisq",
+                "time_generated": 1700265096,
+                "balanced_accuracy": 0.7818181818181819,
+                "f1_score": 0.7068965517241379,
+                "brier_score": 0.14758977500650378,
+                "kl_divergence": 32.0568408686501,
+                "area_under_curve": 0.8565289256198347,
+                "structure": {
+                    "random_variables": "Age(Age);Outcome(Outcome);Pregnancies(Pregnancies);BloodPressure(BloodPressure);BMI(BMI);SkinThickness(SkinThickness);Insulin(Insulin);Glucose(Glucose)",
+                    "structure": "P(Age);P(Outcome);P(Pregnancies|Age);P(BloodPressure|Pregnancies,Age);P(BMI|BloodPressure,Outcome);P(SkinThickness|Pregnancies,BMI);P(Insulin|SkinThickness);P(Glucose|Insulin,Outcome)"
+                },
+                "config_path": "config/metrics-configs/effect-of-independence-overwritable-structure-best-structure-11-17_23:51:36.txt",
+                "rand_dag_time": 15.60051965713501,
+                "cpt_generator_time": 0.015210151672363281
+            }
+        ]
+    }
+}

@@ -1,4 +1,4 @@
-from datetime import datetime   
+from datetime import datetime
 from platform import node
 from typing import final
 import numpy as np
@@ -14,23 +14,25 @@ from matplotlib import pyplot as plt
 import networkx as nx
 from itertools import combinations
 
+
 def read_csv(filePath, target: str):
-    '''
+    """
     @param filePath is the path to the csv file
     @param target is the random variable to be evaluated
     @return a dictionary of the data
-    '''
-    read_data = np.genfromtxt(filePath, delimiter=",", dtype="<U32", encoding='utf-8-sig')
+    """
+    read_data = np.genfromtxt(
+        filePath, delimiter=",", dtype="<U32", encoding="utf-8-sig"
+    )
     response_data = {}
     headers = {}
     header_data = []
-    
-    
+
     if target:
         header_data = read_data[0]
         if target not in header_data:
-            raise ValueError(f'{target} must be a random variable in the dataset')
-        
+            raise ValueError(f"{target} must be a random variable in the dataset")
+
         [[idx_result]] = np.where(header_data == target)
         # // find index of training
         headers["result"] = header_data[idx_result]
@@ -82,6 +84,7 @@ def processData(
 
     return returnData
 
+
 def splitData(arrayData, delimitter):
     return list(filter(None, arrayData.split(delimitter)))
 
@@ -122,6 +125,7 @@ def read_training_data(trainingDataPath, training: str):
     )
     return type, random_variables, result, input_data, output_data
 
+
 def calculateMarginalProbabilities(data):
     if data is not None:
         type, random_variables, result, input_data, output_data = data
@@ -152,6 +156,7 @@ def calculateMarginalProbabilities(data):
 
     return marginal_probability
 
+
 def allConditionalProbabilities(data):
     if data is not None:
         type, random_variables, result, input_data, output_data = data
@@ -165,6 +170,7 @@ def allConditionalProbabilities(data):
         )
 
     return conditional_probabilities
+
 
 def calculateConditionalProbability(data, prior, evidence):
     """
@@ -230,37 +236,38 @@ def independent_probability_structure(data):
     # reading data
     type, random_variables, result, input_data, output_data = data
 
-    # step1 get all    
+    # step1 get all
     marProb = calculateMarginalProbabilities(data)
     ## print(marProb[result])
-    
 
     # step 2: get all possible conditional probabilities assuming all are independent
     condProb = allConditionalProbabilities(data)
 
     structure_data = condProb.copy()
     structure_data[result] = marProb[result]
-    
+
     edges = []
     for struct in structure_data:
-        edges.append(tuple(struct.split('|')))
-        
+        edges.append(tuple(struct.split("|")))
+
     graph = nx.DiGraph()
     edges_list = []
     node_list = []
     for edge in edges:
-        if len(edge) == 2: edges_list.append(edge)
-        if len(edge) == 1: node_list.append(edge[0])
+        if len(edge) == 2:
+            edges_list.append(edge)
+        if len(edge) == 1:
+            node_list.append(edge[0])
     graph.add_edges_from(edges_list)
     graph.add_nodes_from(node_list)
 
     structure_array = topological_sort_for_structure(graph)
 
-    return structure_data, structure_array 
+    return structure_data, structure_array
 
 
 def formatIntoConfigStructureFile(evalVar, filePath, structureType="independent"):
-    acceptable_struct_types = ['independant']
+    acceptable_struct_types = ["independant"]
     data = read_training_data(filePath, evalVar)
     type, random_variables, result, input_data, output_data = data
     variables = np.append(random_variables, result)
@@ -272,11 +279,10 @@ def formatIntoConfigStructureFile(evalVar, filePath, structureType="independent"
     # section to check the type of structure that will be used for the cpt
     if structureType not in acceptable_struct_types:
         return "structureType must be provided"
-        
+
     if structureType == "independent":
         structureData = independent_probability_structure(data)
-        
-    
+
     newFilePath = "config/config-" + evalVar.lower() + "-created.txt"
     with open(newFilePath, "w") as file:
         file.write(f"name:{evalVar}({evalVar})")
@@ -284,146 +290,95 @@ def formatIntoConfigStructureFile(evalVar, filePath, structureType="independent"
         file.write("\n\nrandom_variables:")
         vars = []
         for var in np.append(random_variables, result):
-            vars.append(f'P({var})') 
-               
-        file.write(';'.join(vars))
+            vars.append(f"P({var})")
+
+        file.write(";".join(vars))
         # how to split array into string with ; sperator
         # file.write(random_variables.join(";"))
         file.write("\n\nstructure:")
         structs = []
         for struct in structureData:
-            structs.append(f'P({struct})')
-        file.write(';'.join(structs))
-    
+            structs.append(f"P({struct})")
+        file.write(";".join(structs))
+
     return newFilePath
 
 
-
-def config_structure_file(node_structure: dict, file_name: str, unique: str = '') -> str:
-    '''
+def config_structure_file(
+    node_structure: dict, file_name: str, unique: str = ""
+) -> str:
+    """
     @param: node_structure = {
             'random_variables':'var1(var1);...;varn(varn)',
             'structure':'P(var1);P(var1|var2);...;P(varn|varm,varo)'
         }
-    
-    '''
+
+    """
     random_variables, structure = node_structure.values()
-    if unique != '': unique = '-' + unique + '-' + datetime.utcnow().strftime("%m-%d_%H:%M:%S")
-    new_file_path = f'config/{file_name}{unique}.txt'
-    with open(new_file_path, "w", encoding='utf-8-sig') as file:
+    if unique != "":
+        unique = "-" + unique + "-" + datetime.utcnow().strftime("%m-%d_%H:%M:%S")
+    new_file_path = f"config/{file_name}{unique}.txt"
+    with open(new_file_path, "w", encoding="utf-8-sig") as file:
         file.write(f"name:{file_name}")
         file.write("\n\nrandom_variables:" + random_variables)
         file.write("\n\nstructure:" + structure)
     return new_file_path
 
+
 def topological_sort_for_structure(di_graph: nx.DiGraph):
     output_struct = []
     random_variables = []
 
-    struct_list = [(node,list(di_graph.predecessors(node))) for node in nx.topological_sort(di_graph)]
+    struct_list = [
+        (node, list(di_graph.predecessors(node)))
+        for node in nx.topological_sort(di_graph)
+    ]
     for [node, parents] in struct_list:
         if len(parents) > 0:
             output_struct.append(f'P({node}|{",".join(parents)})')
         else:
-            output_struct.append(f'P({node})')
+            output_struct.append(f"P({node})")
 
     for node in list(nx.topological_sort(di_graph)):
-        random_variables.append(f'{node}({node})')
+        random_variables.append(f"{node}({node})")
 
-    return {'random_variables': ';'.join(random_variables), 'structure': ';'.join(output_struct)}
-
-
-#########################################
-############### Inference  ##############
-#########################################
-# def InferenceByEnumeration():
-#     alg_name = 'InferenceByEnumeration'
-#     # file_name =
-#     # prob_query = 
-#     # num_samples = 
-#     BayesNetInference(alg_name, file_name, prob_query, num_samples)
-#     return 0
-
-# def RejectionSampling():
-#     alg_name = 'RejectionSampling'
-#     # file_name =
-#     # prob_query = 
-#     # num_samples = 
-#     BayesNetInference(alg_name, file_name, prob_query, num_samples)
-#     return 0
-
-#########################################
-########## Independece Testing ##########
-#########################################
-'''
-for more independence tests, check the city.py file as it contains many tests
-/home/krono/.local/lib/python3.10/site-packages/causallearn/utils/cit.py
-'''
-
-########### Discrete Tests ###########
-def ChiIndependenceTest(train_data_path = '../data/cardiovascular_data-discretized-train.csv', test_args = 'I(weight,gluc|target)'):
-    ci = ConditionalIndependence(train_data_path, 'chisq')
-    Vi, Vj, parents_i = ci.parse_test_args(test_args)
-    p = ci.compute_pvalue(Vi, Vj, parents_i)
-    return p
-    
-def GsqIndependenceTest(train_data_path = '../data/cardiovascular_data-discretized-train.csv', test_args = 'I(weight,gluc|target)'):
-    ci = ConditionalIndependence(train_data_path, 'gsq')
-    Vi, Vj, parents = ci.parse_test_args(test_args)
-    p = ci.compute_pvalue(Vi, Vj, parents)
-    return p
-
-########### Continuous Tests ###########
-def fisherzIndependenceTest(train_data_path, test_args = 'I(Smoking,Coughing|Lung_cancer)'):
-    # TODO:
-    return 0 
-
-#########################################
-## PC Algorithm for Structure Learning ##
-#########################################  
-
-#
-
-def ConditionNodes(G: nx.Graph, TrueGraph: nx.DiGraph) -> tuple[nx.Graph, list[str]]:
-    edges = list(G.edges())
-    nodes = list(G.nodes())
-    conditioning_nodes = []
-    
-    for edge in edges:
-        for node in nodes:
-            if immortalityTest(TrueGraph, edge, node):
-                conditioning_nodes.append(node)
-                logging('EDGE REMOVAL', f'removing edge {edge} as it is immoral of {node}')
-                removeEdge(G, edge)
-    return G, conditioning_nodes
+    return {
+        "random_variables": ";".join(random_variables),
+        "structure": ";".join(output_struct),
+    }
 
 
 #########################################
 ############# Other Tools ###############
-#########################################  
+#########################################
 
-def logging(info:str, message):
+
+def logging(info: str, message):
     types = [
-        'GRAPH NOTICE', 
-        'CHECKING', 
-        'IMMORAILITY TEST', 
-        'IMMORALITY DETECTED', 
+        "GRAPH NOTICE",
+        "CHECKING",
+        "IMMORAILITY TEST",
+        "IMMORALITY DETECTED",
         # 'EDGE REMOVAL'
-        # 'SHORTEST NODE PATHS', 
+        # 'SHORTEST NODE PATHS',
     ]
-    
+
     if info in types:
         return False
-    
-    return ## print(f'{info}: {message}')
+
+    return  ## print(f'{info}: {message}')
+
 
 import multiprocessing.pool
 import functools
 
+
 def timeout(max_timeout):
     """Timeout decorator, parameter in seconds."""
+
     def timeout_decorator(item):
         """Wrap the original function."""
+
         @functools.wraps(item)
         def func_wrapper(*args, **kwargs):
             """Closure for function."""
@@ -431,19 +386,7 @@ def timeout(max_timeout):
             async_result = pool.apply_async(item, args, kwargs)
             # raises a TimeoutError if execution exceeds max_timeout
             return async_result.get(max_timeout)
+
         return func_wrapper
+
     return timeout_decorator
-
-
-#######Validation stuff 
-# def validate_path_evaluation(func):
-#     def validate(Graph: nx.Graph | nx.DiGraph, node_1: str, node_2: str, *cond_node: str, method = 'dijkstra'):
-#         if node_1 not in Graph.nodes() or node_2 not in Graph.nodes():
-#             raise ValueError("node_1 and node_2 must be in Graph")
-#         if cond_node and cond_node not in Graph.nodes():
-#             ## print(cond_node)
-#             raise ValueError("conditional node must be in Graph")
-#         if method not in ['dijkstra', 'bellman-ford']:
-#             raise ValueError("method must be 'dijkstra' or 'bellman-ford'")
-#         return func(Graph, node_1, node_2, method)
-#     return validate

@@ -154,7 +154,7 @@ class BayesNetReader:
             try:
                 configfile_name = self.bn["regression_models"]
                 print("\nLOADING %s ..." % (configfile_name))
-                models_file = open(configfile_name, 'rb', encoding='utf-8-sig')
+                models_file = open(configfile_name, 'rb')
                 regression_models = pickle.load(models_file)
                 self.bn["means"] = regression_models["means"]
                 self.bn["stdevs"] = regression_models["stdevs"]
