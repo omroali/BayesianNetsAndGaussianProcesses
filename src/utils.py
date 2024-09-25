@@ -2,17 +2,8 @@ from datetime import datetime
 from platform import node
 from typing import final
 import numpy as np
-import csv
 
-from sympy import im, topological_sort
-
-# from BayesNetInference import BayesNetInference
-# from ConditionalIndependence import ConditionalIndependence
-
-# import pandas as pd
-from matplotlib import pyplot as plt
 import networkx as nx
-from itertools import combinations
 
 
 def read_csv(filePath, target: str):
@@ -50,66 +41,6 @@ def read_csv(filePath, target: str):
         "headers": headers,
         "variables": response_data,
     }
-
-
-# storing
-def processData(
-    returnData, key: str, values: list[str] | str
-) -> dict[str, str | list[str]]:
-    if key == "name":
-        returnData["name"] = values
-        return returnData
-
-    if key not in returnData:
-        returnData[key] = []
-
-    # TODO: should i say the random_variables are the abbreviation? random_variable name is the full name?
-    if key == "random_variables":
-        for random_variable in values:
-            returnData[key].append(random_variable)
-        return returnData
-
-    if key == "structure":
-        for struct in values:
-            returnData[key].append(struct)
-        return returnData
-
-    if "CPT" in key:
-        # returnData["CPT"] = processCPT(returnData, key, values)
-        # CPT obj
-        #   random_variable: eg B
-        #   Table:
-
-        return returnData
-
-    return returnData
-
-
-def splitData(arrayData, delimitter):
-    return list(filter(None, arrayData.split(delimitter)))
-
-
-def histogram(data):
-    # csv
-    # x0,x1,x2,x3,x4,x5
-    #  c, l, o, s, e, _
-    return 0
-
-
-def getHeaders(data):
-    return data[0].split(",")
-
-
-def getBasicStructure(filePath):
-    data = read_csv(filePath, True)
-    inputs = data["headers"]["input"]
-    output = data["headers"]["output"]
-    structure = []
-
-    for input in inputs:
-        structure.append(f"{output}|{input}")
-
-    return structure
 
 
 def read_training_data(trainingDataPath, training: str):

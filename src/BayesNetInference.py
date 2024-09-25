@@ -39,8 +39,6 @@ from BayesNetReader import BayesNetReader
 
 
 class BayesNetInference(BayesNetReader):
-
-
     def __init__(self, alg_name, file_name, prob_query, num_samples):
         self.query = {}
         self.prob_dist = {}
@@ -53,35 +51,36 @@ class BayesNetInference(BayesNetReader):
         self.query = bnu.tokenise_query(prob_query, self.verbose)
 
         start = time.time()
-        if alg_name == 'InferenceByEnumeration':
+        if alg_name == "InferenceByEnumeration":
             self.prob_dist = self.enumeration_ask()
             normalised_dist = bnu.normalise(self.prob_dist)
             print("Inference-by-enumeration:")
             print("unnormalised P(%s)=%s" % (self.query["query_var"], self.prob_dist))
             print("normalised P(%s)=%s" % (self.query["query_var"], normalised_dist))
 
-        elif alg_name == 'RejectionSampling':
-            print(f'-\nRejection-sampling-{num_samples}:')
+        elif alg_name == "RejectionSampling":
+            print(f"-\nRejection-sampling-{num_samples}:")
             self.prob_dist = self.rejection_sampling(num_samples)
-            print("P(%s)=%s" %(self.query["query_var"], self.prob_dist))
+            print("P(%s)=%s" % (self.query["query_var"], self.prob_dist))
 
         else:
-            print("ERROR: Couldn't recognise algorithm="+str(alg_name))
+            print("ERROR: Couldn't recognise algorithm=" + str(alg_name))
             print("Valid choices={InferenceByEnumeration,RejectionSampling}")
 
         end = time.time()
-        print('Execution Time: {}'.format(end-start))
+        print("Execution Time: {}".format(end - start))
 
     # main method for inference by enumeration, which invokes
-	# enumerate_all() for each domain value of the query variable
+    # enumerate_all() for each domain value of the query variable
     def enumeration_ask(self):
-        if self.verbose: print("-\nSTARTING Inference by Enumeration...")
+        if self.verbose:
+            print("-\nSTARTING Inference by Enumeration...")
 
         if "regression_models" not in self.bn:
             # initialisation required for discrete Bayes nets
             Q = {}
             for value in self.bn["rv_key_values"][self.query["query_var"]]:
-                value = value.split('|')[0]
+                value = value.split("|")[0]
                 Q[value] = 0
         else:
             # initialisation required for Gaussian Bayes nets
@@ -94,11 +93,12 @@ class BayesNetInference(BayesNetReader):
             probability = self.enumerate_all(variables, evidence)
             Q[value] = probability
 
-        if self.verbose: print("\tQ="+str(Q))
-        return Q # Q is an unnormalised probability distribution
+        if self.verbose:
+            print("\tQ=" + str(Q))
+        return Q  # Q is an unnormalised probability distribution
 
     # returns a probability for the arguments provided, based on
-	# summations or multiplications of prior/conditional probabilities
+    # summations or multiplications of prior/conditional probabilities
     def enumerate_all(self, variables, evidence):
         if len(variables) == 0:
             return 1.0
@@ -106,10 +106,10 @@ class BayesNetInference(BayesNetReader):
         V = variables[0]
 
         if V in evidence:
-            v = str(evidence[V]).split('|')[0]
+            v = str(evidence[V]).split("|")[0]
             p = bnu.get_probability_given_parents(V, v, evidence, self.bn)
             variables.pop(0)
-            return p*self.enumerate_all(variables, evidence)
+            return p * self.enumerate_all(variables, evidence)
 
         else:
             sum = 0
@@ -119,19 +119,19 @@ class BayesNetInference(BayesNetReader):
                 p = bnu.get_probability_given_parents(V, v, evidence, self.bn)
                 rest_variables = variables.copy()
                 rest_variables.pop(0)
-                sum += p*self.enumerate_all(rest_variables, evidence)
+                sum += p * self.enumerate_all(rest_variables, evidence)
                 evidence = evidence_copy
 
             return sum
 
     # main method to carry out approximate probabilistic inference,
-	# which invokes prior_sample() and is_compatible_with_evidence()
+    # which invokes prior_sample() and is_compatible_with_evidence()
     def rejection_sampling(self, num_samples):
         # print("\nSTARTING rejection sampling...")
         query_variable = self.query["query_var"]
         evidence = self.query["evidence"]
-        samples = [] # vector of non-rejected samples
-        C = {} # counts per value in query variable
+        samples = []  # vector of non-rejected samples
+        C = {}  # counts per value in query variable
 
         # initialise vector of counts
         for value in self.bn["rv_key_values"][query_variable]:
@@ -157,8 +157,8 @@ class BayesNetInference(BayesNetReader):
         X = {}
         sampled_var_values = {}
 
-        # iterates over the set of random variables as specified in the 
-		# config file of the Bayes net, in the order from left to right
+        # iterates over the set of random variables as specified in the
+        # config file of the Bayes net, in the order from left to right
         for variable in self.bn["random_variables"]:
             X[variable] = self.get_sampled_value(variable, sampled_var_values)
             sampled_var_values[variable] = X[variable]
@@ -166,21 +166,6 @@ class BayesNetInference(BayesNetReader):
                 return None
 
         return X
-    
-    # def gibbs_sampling(self, num_samples, num_burnin):
-    #     '''
-    #     gibbs sampler
-    #     '''
-    #     samples = np.zeros((num_samples, len(initial_state)))
-    #     state = initial_state.copy()
-
-    #     for i in range(num_samples + num_burnin):
-    #         for j in range(len(state)):
-    #             state[j] = conditional_distributions[j](state)
-    #         if i >= num_burnin:
-    #             samples[i - num_burnin] = state
-
-    #     return samples
 
     # returns a sampled value for the given random variable as argument
     def get_sampled_value(self, V, sampled):
@@ -190,7 +175,7 @@ class BayesNetInference(BayesNetReader):
 
         # generate cummulative distribution for random variable V without parents
         if parents is None:
-            for value, probability in self.bn["CPT("+V+")"].items():
+            for value, probability in self.bn["CPT(" + V + ")"].items():
                 prob_mass += probability
                 cumulative_cpt[value] = prob_mass
 
@@ -206,16 +191,16 @@ class BayesNetInference(BayesNetReader):
             print("ERROR: probabilities=%s do not sum to 1" % (cumulative_cpt))
             exit(0)
 
-		# sample a value from the cummulative distribution generated above
+        # sample a value from the cummulative distribution generated above
         for value, probability in cumulative_cpt.items():
             random_number = random.random()
             if random_number <= probability:
                 return value.split("|")[0]
 
-        return None # this shouldn't happen -- unless something was incompatible
+        return None  # this shouldn't happen -- unless something was incompatible
 
     # returns True if evidence has key-value pairs same as X
-	# returns False otherwise
+    # returns False otherwise
     def is_compatible_with_evidence(self, X, evidence):
         compatible = True
         for variable, value in evidence.items():
@@ -227,14 +212,24 @@ class BayesNetInference(BayesNetReader):
 
 if __name__ == "__main__":
     if len(sys.argv) < 4 or len(sys.argv) > 5:
-        print("USAGE: BayesNetInference.py [inference_algorithm] [your_config_file.txt] [query] (num_samples)")
-        print("EXAMPLE1> BayesNetInference.py InferenceByEnumeration config-alarm.txt \"P(B|J=true,M=true)\"")
-        print("EXAMPLE2> BayesNetInference.py RejectionSampling config-alarm.txt \"P(B|J=true,M=true)\" 10000")
+        print(
+            "USAGE: BayesNetInference.py [inference_algorithm] [your_config_file.txt] [query] (num_samples)"
+        )
+        print(
+            'EXAMPLE1> BayesNetInference.py InferenceByEnumeration config-alarm.txt "P(B|J=true,M=true)"'
+        )
+        print(
+            'EXAMPLE2> BayesNetInference.py RejectionSampling config-alarm.txt "P(B|J=true,M=true)" 10000'
+        )
         exit(0)
 
-    alg_name = sys.argv[1] # inference algorithm={InferenceByEnumeration,RejectionSampling}
-    file_name = sys.argv[2] # your_config_file.txt, e.g., config-alarm.txt
-    prob_query = sys.argv[3] # query, e.g., P(B|J=true,M=true)
-    num_samples = int(sys.argv[4]) if len(sys.argv)==5 else None # number of samples, e.g., 10000
+    alg_name = sys.argv[
+        1
+    ]  # inference algorithm={InferenceByEnumeration,RejectionSampling}
+    file_name = sys.argv[2]  # your_config_file.txt, e.g., config-alarm.txt
+    prob_query = sys.argv[3]  # query, e.g., P(B|J=true,M=true)
+    num_samples = (
+        int(sys.argv[4]) if len(sys.argv) == 5 else None
+    )  # number of samples, e.g., 10000
 
     BayesNetInference(alg_name, file_name, prob_query, num_samples)

@@ -1,1 +1,0 @@
-{"random_variables": "Age(Age);Glucose(Glucose);BMI(BMI);Insulin(Insulin);BloodPressure(BloodPressure);Outcome(Outcome);SkinThickness(SkinThickness);Pregnancies(Pregnancies)", "structure": "P(Age);P(Glucose);P(BMI);P(Insulin|Glucose);P(BloodPressure|BMI,Age);P(Outcome|Glucose,BMI);P(SkinThickness|Insulin,BMI);P(Pregnancies|BloodPressure,SkinThickness,Age)"}
